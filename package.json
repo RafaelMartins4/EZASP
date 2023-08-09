@@ -1,0 +1,69 @@
+{
+  "name": "ezasp",
+  "displayName": "EZASP",
+  "description": "Making Learning Answer Set Programming Easier",
+  "version": "0.0.1",
+  "publisher": "rmrhenriques",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": ["onLanguage:asp"],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ezasp.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "languages": [
+			{
+				"id": "asp",
+				"aliases": [
+					"Answer Set Programming",
+					"Answer Set",
+					"asp",
+					"Clingo",
+					"Potassco",
+					"Logic Program",
+					"Declarative Programming"
+				],
+				"extensions": [
+					".lp",
+					".ilp",
+					".cl",
+					".clp",
+					".iclp",
+					".Clp",
+					".iClp",
+					".blp",
+					".iblp"
+				]
+			}
+		]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/index.js"
+  },
+  "extensionDependencies": [
+    "abelcour.asp-syntax-highlight",
+    "ffrankreiter.answer-set-programming-language-support"
+  ],
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.2.5",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-electron": "^2.3.2",
+    "chai": "^4.3.7",
+    "eslint": "^8.41.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.3"
+  }
+}
