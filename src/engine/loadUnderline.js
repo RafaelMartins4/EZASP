@@ -1,4 +1,3 @@
-
 // @ts-ignore
 const { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE } = require('../parser/getRuleType');
 
@@ -22,27 +21,56 @@ function detectOS() {
  */
 function loadUnderlineDummy(textRaw) {
 
-	if (textRaw == '')
+	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
 
 	const OS = detectOS();
 
 	let SPLIT_CODE;
 
-	if (OS == MAC_OS || OS == LINUX)
-		SPLIT_CODE = '\n';
-	else
+	if (OS == WINDOWS)
 		SPLIT_CODE = '\r\n';
+	else
+		SPLIT_CODE = '\n';
 
 	//Gets the document and splits it into an array of lines
 	const text = textRaw.trim().split(SPLIT_CODE);
 
-	const formattedText = formatText(text);
-	
+	const result = formatText(text);
+	const formattedText = result.formattedText;
+	const lines = result.lines;
+
+	/**
+	 * @param {number} index
+	 */
+	function getRange(index){
+		const originalStart = text[lines[index][0]];
+		const originalEnd = text[lines[index][1]];
+		const rule = formattedText[index];
+
+		let startIndex = -1;
+
+		if(!originalStart.endsWith('.'))
+			startIndex = originalStart.lastIndexOf('.');
+		else
+			startIndex = originalStart.slice(0,-1).lastIndexOf('.');
+		
+		let endIndex = startIndex;
+
+		if(originalStart != originalEnd)
+			for(let i = 0; i<originalEnd.length; i++){
+				if(originalEnd[i] == rule[0])
+					endIndex = i+rule.length;
+			}
+
+		return {firstline: lines[index][0], lastLine:lines[index][1], start: startIndex, end : endIndex}
+	}
+
+
 	/*
 	Creates an array without comments and empty spaces, where in each position there is an array with 2 positons:
 		position 0 -> the rule's type
-		position 1 -> the rule's line in the document
+		position 1 -> the rule's index in the array formattedText
 	*/
 	let nonReductantRules = [];
 
@@ -56,14 +84,14 @@ function loadUnderlineDummy(textRaw) {
 	/*
 		Underlines and provides error message to every rule in the ASP that violates the EZASP protocol
 	*/
-	let linesToUnderline = [];
+	let rangesToUnderline = [];
 	let hoverMessages = [];
 
 	//Shows error if rules are invalid
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == INVALID_RULE) {
-			//const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(nonReductantRules[i][1]);
+			const range = getRange(nonReductantRules[i][1]);
+			rangesToUnderline.push(range);
 			hoverMessages.push("Invalid Rule.")
 		}
 	}
@@ -75,8 +103,8 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisFact = false;
 		}
 		if (nonReductantRules[i][0] == FACT && !lastLineisFact) {
-			//const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(nonReductantRules[i][1]);
+			const range = getRange(nonReductantRules[i][1]);
+			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all facts must be before choices.")
 		}
 	}
@@ -89,8 +117,8 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisChoice = false;
 		}
 		if (nonReductantRules[i][0] == CHOICE && !lastLineisChoice) {
-			//const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(nonReductantRules[i][1]);
+			const range = getRange(nonReductantRules[i][1]);
+			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all choices must be between facts and rules.")
 		}
 	}
@@ -104,8 +132,8 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisRule = false;
 		}
 		if (nonReductantRules[i][0] == DEFINITION && !lastLineisRule) {
-			//const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(nonReductantRules[i][1]);
+			const range = getRange(nonReductantRules[i][1]);
+			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all rules must be between choices and constraints.")
 		}
 	}
@@ -120,8 +148,8 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisConstraint = false;
 		}
 		if (nonReductantRules[i][0] == CONSTRAINT && !lastLineisConstraint) {
-			//const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(nonReductantRules[i][1]);
+			const range = getRange(nonReductantRules[i][1]);
+			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all constraints must be between rules and views.")
 		}
 	}
@@ -137,15 +165,13 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisView = false;
 		}
 		if (nonReductantRules[i][0] == SHOW_STATEMEMENT && !lastLineisView) {
-			//const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(nonReductantRules[i][1]);
+			const range = getRange(nonReductantRules[i][1]);
+			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all views must be after constraints.")
 		}
 	}
 
-	//activeEditor.setDecorations(underlineRed, linesToUnderline);
-
-	return [linesToUnderline, hoverMessages];
+	return [rangesToUnderline, hoverMessages];
 }
 
 /**
@@ -180,6 +206,13 @@ function loadUnderline(activeEditor) {
 	*/
 	let linesToUnderline = [];
 	let hoverMessages = [];
+
+	/*
+	const startPosition = new vscode.Position(activeEditor.document.lineAt(0),1);
+	const endPosition = new vscode.Position(activeEditor.document.lineAt(0), startPosition.character+9);
+	const range = new vscode.Range(startPosition, endPosition);
+	linesToUnderline.push(range);
+	*/
 
 	//Shows error if rules are invalid
 	for(let i = 0; i < nonReductantRules.length; i++){
@@ -264,6 +297,8 @@ function loadUnderline(activeEditor) {
 			hoverMessages.push("Error, all views must be after constraints.")
 		}
 	}
+
+
 
 	return [linesToUnderline, hoverMessages];
 }

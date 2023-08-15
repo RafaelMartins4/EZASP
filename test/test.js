@@ -249,7 +249,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test1_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result,{formattedText: [
         "n(1..9).",
         "% positions",
         "",
@@ -269,7 +269,25 @@ describe('Extension', function() {
         "% for each subgrid, a number only occurs once",
         "",
         "#show in/3."
-    ]); 
+    ], lines: [{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 7},
+               {lineStart: 0, lineEnd: 0, indexStart: 9, indexEnd: 19},
+               {lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 0},
+               {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 32},
+               {lineStart: 2, lineEnd: 2, indexStart: 34, indexEnd: 69},
+               {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 0},
+               {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 32},
+               {lineStart: 4, lineEnd: 4, indexStart: 34, indexEnd: 83},
+               {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 0},
+               {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 32},
+               {lineStart: 6, lineEnd: 6, indexStart: 34, indexEnd: 83},
+               {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 0},
+               {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 75},
+               {lineStart: 8, lineEnd: 8, indexStart: 77, indexEnd: 96},
+               {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 0},
+               {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 53},
+               {lineStart: 10, lineEnd: 10, indexStart: 55, indexEnd: 99},
+               {lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 0},
+               {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 10}]}); 
     });
 
     it('rules in multiple line testing 2', function() {
@@ -277,7 +295,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test2_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result,{formattedText: [
         "%* this is a commentuntil here*%",
         "n(1..9).",
         "% positions",
@@ -298,7 +316,26 @@ describe('Extension', function() {
         "% for each subgrid, a number only occurs once",
         "",
         "#show in/3."
-    ]); 
+    ], lines:  [{lineStart: 0, lineEnd: 2, indexStart: 0, indexEnd: 11},
+                {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 7},
+                {lineStart: 4, lineEnd: 4, indexStart: 9, indexEnd: 19},
+                {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 0},
+                {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 32},
+                {lineStart: 6, lineEnd: 6, indexStart: 34, indexEnd: 69},
+                {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 0},
+                {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 32},
+                {lineStart: 8, lineEnd: 8, indexStart: 34, indexEnd: 83},
+                {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 0},
+                {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 32},
+                {lineStart: 10, lineEnd: 10, indexStart: 34, indexEnd: 83},
+                {lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 0},
+                {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 75},
+                {lineStart: 12, lineEnd: 12, indexStart: 77, indexEnd: 96},
+                {lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 0},
+                {lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 53},
+                {lineStart: 14, lineEnd: 14, indexStart: 55, indexEnd: 99},
+                {lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 0},
+                {lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 10}]}); 
     });
 
     it('rules in multiple line testing 3', function() {
@@ -306,7 +343,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test3_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result,{formattedText: [
         "% positions",
         "n(1..4).",
         "n(5..9).",
@@ -327,7 +364,26 @@ describe('Extension', function() {
         "% for each subgrid, a number only occurs once",
         "",
         "#show in/3."
-    ]); 
+    ], lines:  [{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 10},
+                {lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 7},
+                {lineStart: 1, lineEnd: 1, indexStart: 9, indexEnd: 16},
+                {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 0},
+                {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 32},
+                {lineStart: 3, lineEnd: 3, indexStart: 34, indexEnd: 69},
+                {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 0},
+                {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 32},
+                {lineStart: 5, lineEnd: 5, indexStart: 34, indexEnd: 83},
+                {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 0},
+                {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 32},
+                {lineStart: 7, lineEnd: 7, indexStart: 34, indexEnd: 83},
+                {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 0},
+                {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 75},
+                {lineStart: 9, lineEnd: 9, indexStart: 77, indexEnd: 96},
+                {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 0},
+                {lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 53},
+                {lineStart: 11, lineEnd: 11, indexStart: 55, indexEnd: 99},
+                {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 0},
+                {lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 10}]}); 
     });
 
     it('rules in multiple line testing 4', function() {
@@ -335,7 +391,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test4_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "n(1..4).",
         "n(5..9).",
         "% positions",
@@ -356,7 +412,26 @@ describe('Extension', function() {
         "% for each subgrid, a number only occurs once",
         "",
         "#show in/3."
-    ]); 
+    ],  lines: [{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 7},
+                {lineStart: 0, lineEnd: 0, indexStart: 9, indexEnd: 16},
+                {lineStart: 0, lineEnd: 0, indexStart: 18, indexEnd: 28},
+                {lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 0},
+                {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 32},
+                {lineStart: 2, lineEnd: 2, indexStart: 34, indexEnd: 69},
+                {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 0},
+                {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 32},
+                {lineStart: 4, lineEnd: 4, indexStart: 34, indexEnd: 83},
+                {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 0},
+                {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 32},
+                {lineStart: 6, lineEnd: 6, indexStart: 34, indexEnd: 83},
+                {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 0},
+                {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 75},
+                {lineStart: 8, lineEnd: 8, indexStart: 77, indexEnd: 96},
+                {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 0},
+                {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 53},
+                {lineStart: 10, lineEnd: 10, indexStart: 55, indexEnd: 99},
+                {lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 0},
+                {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 10}]}); 
     });
 
     it('rules in multiple line testing 5', function() {
@@ -365,7 +440,7 @@ describe('Extension', function() {
 
    
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "%* this is a comment until here*%", 
         "n(1..9).",
         "% positions",
@@ -386,7 +461,26 @@ describe('Extension', function() {
         "% for each subgrid, a number only occurs once",
         "",
         "#show in/3."
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 32},
+              {lineStart: 0, lineEnd: 0, indexStart: 34, indexEnd: 41},
+              {lineStart: 0, lineEnd: 0, indexStart: 43, indexEnd: 53},
+              {lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 0},
+              {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 32},
+              {lineStart: 2, lineEnd: 2, indexStart: 34, indexEnd: 69},
+              {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 0},
+              {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 32},
+              {lineStart: 4, lineEnd: 4, indexStart: 34, indexEnd: 83},
+              {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 0},
+              {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 32},
+              {lineStart: 6, lineEnd: 6, indexStart: 34, indexEnd: 83},
+              {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 0},
+              {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 75},
+              {lineStart: 8, lineEnd: 8, indexStart: 77, indexEnd: 96},
+              {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 0},
+              {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 53},
+              {lineStart: 10, lineEnd: 10, indexStart: 55, indexEnd: 99},
+              {lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 0},
+              {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 10}]}); 
     });
 
     it('rules in multiple line testing 6', function() {
@@ -394,7 +488,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test6_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "n(1..4).",
         "% positions",
         "n(5..9).",
@@ -415,7 +509,26 @@ describe('Extension', function() {
         "% for each subgrid, a number only occurs once",
         "",
         "#show in/3."
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 7},
+              {lineStart: 0, lineEnd: 0, indexStart: 16, indexEnd: 26},
+              {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 1},
+              {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 0},
+              {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 32},
+              {lineStart: 4, lineEnd: 4, indexStart: 34, indexEnd: 69},
+              {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 0},
+              {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 32},
+              {lineStart: 6, lineEnd: 6, indexStart: 34, indexEnd: 83},
+              {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 0},
+              {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 32},
+              {lineStart: 8, lineEnd: 8, indexStart: 34, indexEnd: 83},
+              {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 0},
+              {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 75},
+              {lineStart: 10, lineEnd: 10, indexStart: 77, indexEnd: 96},
+              {lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 0},
+              {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 53},
+              {lineStart: 12, lineEnd: 12, indexStart: 55, indexEnd: 99},
+              {lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 0},
+              {lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 10}]}); 
     });
 
     it('rules in multiple line testing 7', function() {
@@ -423,11 +536,13 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test7_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "n(1..4).",
         "% positions",
         "n(5..9",
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 7},
+              {lineStart: 0, lineEnd: 0, indexStart: 16, indexEnd: 26},
+              {lineStart: 0, lineEnd: 0, indexStart: 9, indexEnd: 14}]}); 
     });
 
     it('rules in multiple line testing 8', function() {
@@ -435,11 +550,13 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test8_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "n(1..4).",
         "% positions",
         "n(5..912345678",
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 7},
+              {lineStart: 0, lineEnd: 0, indexStart: 16, indexEnd: 26},
+              {lineStart: 2, lineEnd: 12, indexStart: 0, indexEnd: 0}]}); 
     });
 
     it('rules in multiple line testing 9', function() {
@@ -447,7 +564,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test9_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "%* ~~~ *%",
         "% ~~",
         "%* ... *%",
@@ -460,7 +577,18 @@ describe('Extension', function() {
         "n(1..9).",
         "n(1..9).",
         "n(1..9)."
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 8},
+              {lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 3},
+              {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 8},
+              {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 3},
+              {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 7},
+              {lineStart: 4, lineEnd: 4, indexStart: 9, indexEnd: 16},
+              {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 7},
+              {lineStart: 5, lineEnd: 5, indexStart: 9, indexEnd: 16},
+              {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 7},
+              {lineStart: 6, lineEnd: 6, indexStart: 9, indexEnd: 16},
+              {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 7},
+              {lineStart: 7, lineEnd: 7, indexStart: 9, indexEnd: 16},]});
     });
 
     it('rules in multiple line testing 10', function() {
@@ -468,7 +596,7 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test10_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "%* ~~~~ *%",
         "% ~~~",
         "%* ... *%",
@@ -481,7 +609,18 @@ describe('Extension', function() {
         "n(1..9).",
         "n(1..9).",
         "n(1..9)."
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 9},
+              {lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 4},
+              {lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 8},
+              {lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 3},
+              {lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 8},
+              {lineStart: 4, lineEnd: 4, indexStart: 10, indexEnd: 18},
+              {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 7},
+              {lineStart: 5, lineEnd: 5, indexStart: 9, indexEnd: 17},
+              {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 8},
+              {lineStart: 6, lineEnd: 6, indexStart: 10, indexEnd: 17},
+              {lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 7},
+              {lineStart: 7, lineEnd: 7, indexStart: 9, indexEnd: 16},]}); 
     });
 
     it('rules in multiple line testing 11', function() {
@@ -489,10 +628,33 @@ describe('Extension', function() {
       let file = readFileSync(PATH+'/formatText/test11_multiple_lines.lp').toLocaleString();
 
       const result = formatText(file.trim().split(SPLIT_CODE));
-      assert.deepEqual(result,[
+      assert.deepEqual(result, {formattedText: [
         "%* positions*%",
         "n(1..9)."
-    ]); 
+    ], lines:[{lineStart: 0, lineEnd: 0, indexStart: 5, indexEnd: 13},
+              {lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 23}]}); 
+    });
+
+    it('rules in multiple line testing 12', function() {
+
+      let file = readFileSync(PATH+'/formatText/test12_multiple_lines.lp').toLocaleString();
+
+      const result = formatText(file.trim().split(SPLIT_CODE));
+      assert.deepEqual(result,{formattedText: [
+        ":-abcdef.",
+        "a.",
+        "a.",
+        "a.",
+        "a.",
+        "a.",
+        "aaaaabc."
+    ], lines:[{lineStart: 0, lineEnd: 7, indexStart: 0, indexEnd: 0},
+              {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 1},
+              {lineStart: 9, lineEnd: 9, indexStart: 2, indexEnd: 3},
+              {lineStart: 9, lineEnd: 9, indexStart: 4, indexEnd: 5},
+              {lineStart: 9, lineEnd: 9, indexStart: 6, indexEnd: 7},
+              {lineStart: 9, lineEnd: 9, indexStart: 8, indexEnd: 9},
+              {lineStart: 9, lineEnd: 12, indexStart: 10, indexEnd: 0}]}); 
     });
   })
 
@@ -796,6 +958,14 @@ describe('Extension', function() {
     it('test 38 - answer set programs testing 5', function() {
 
       let file = readFileSync(PATH+'/loadUnderline/test38_program.lp').toLocaleString();
+
+      const result = loadUnderlineDummy(file);
+      assert.deepEqual(result[0],[]); 
+    });
+
+    it('test 39 - formatText + range testing', function() {
+
+      let file = readFileSync(PATH+'/loadUnderline/test39_format.lp').toLocaleString();
 
       const result = loadUnderlineDummy(file);
       assert.deepEqual(result[0],[]); 

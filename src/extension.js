@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 
-const { loadUnderline } = require('../src/engine/loadUnderline');
+const { loadUnderline, loadUnderlineDummy } = require('../src/engine/loadUnderline');
+
 
 /**
  * @param {vscode.ExtensionContext} context

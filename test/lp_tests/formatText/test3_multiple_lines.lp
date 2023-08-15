@@ -1,5 +1,5 @@
 % positions
-n(1..4). n(5..9). 
+n(1..4). n(5..9).
 
 1{in(X,Y,N):n(N)}1 :- n(Y), n(X). % each position has exactly 1 number
 
