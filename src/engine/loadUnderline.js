@@ -19,7 +19,7 @@ function detectOS() {
 /**
  * @param {string} textRaw
  */
-function loadUnderlineDummy(textRaw) {
+function loadUnderline(textRaw) {
 
 	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
@@ -39,33 +39,6 @@ function loadUnderlineDummy(textRaw) {
 	const result = formatText(text);
 	const formattedText = result.formattedText;
 	const lines = result.lines;
-
-	/**
-	 * @param {number} index
-	 */
-	function getRange(index){
-		const originalStart = text[lines[index][0]];
-		const originalEnd = text[lines[index][1]];
-		const rule = formattedText[index];
-
-		let startIndex = -1;
-
-		if(!originalStart.endsWith('.'))
-			startIndex = originalStart.lastIndexOf('.');
-		else
-			startIndex = originalStart.slice(0,-1).lastIndexOf('.');
-		
-		let endIndex = startIndex;
-
-		if(originalStart != originalEnd)
-			for(let i = 0; i<originalEnd.length; i++){
-				if(originalEnd[i] == rule[0])
-					endIndex = i+rule.length;
-			}
-
-		return {firstline: lines[index][0], lastLine:lines[index][1], start: startIndex, end : endIndex}
-	}
-
 
 	/*
 	Creates an array without comments and empty spaces, where in each position there is an array with 2 positons:
@@ -90,7 +63,7 @@ function loadUnderlineDummy(textRaw) {
 	//Shows error if rules are invalid
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == INVALID_RULE) {
-			const range = getRange(nonReductantRules[i][1]);
+			const range = lines[nonReductantRules[i][1]];
 			rangesToUnderline.push(range);
 			hoverMessages.push("Invalid Rule.")
 		}
@@ -103,7 +76,7 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisFact = false;
 		}
 		if (nonReductantRules[i][0] == FACT && !lastLineisFact) {
-			const range = getRange(nonReductantRules[i][1]);
+			const range = lines[nonReductantRules[i][1]];
 			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all facts must be before choices.")
 		}
@@ -117,7 +90,7 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisChoice = false;
 		}
 		if (nonReductantRules[i][0] == CHOICE && !lastLineisChoice) {
-			const range = getRange(nonReductantRules[i][1]);
+			const range = lines[nonReductantRules[i][1]];
 			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all choices must be between facts and rules.")
 		}
@@ -132,7 +105,7 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisRule = false;
 		}
 		if (nonReductantRules[i][0] == DEFINITION && !lastLineisRule) {
-			const range = getRange(nonReductantRules[i][1]);
+			const range = lines[nonReductantRules[i][1]];
 			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all rules must be between choices and constraints.")
 		}
@@ -148,7 +121,7 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisConstraint = false;
 		}
 		if (nonReductantRules[i][0] == CONSTRAINT && !lastLineisConstraint) {
-			const range = getRange(nonReductantRules[i][1]);
+			const range = lines[nonReductantRules[i][1]];		
 			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all constraints must be between rules and views.")
 		}
@@ -165,7 +138,7 @@ function loadUnderlineDummy(textRaw) {
 			lastLineisView = false;
 		}
 		if (nonReductantRules[i][0] == SHOW_STATEMEMENT && !lastLineisView) {
-			const range = getRange(nonReductantRules[i][1]);
+			const range = lines[nonReductantRules[i][1]];			
 			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all views must be after constraints.")
 		}
@@ -174,133 +147,4 @@ function loadUnderlineDummy(textRaw) {
 	return [rangesToUnderline, hoverMessages];
 }
 
-/**
- * @param activeEditor
- */
-function loadUnderline(activeEditor) {
-
-	//Gets the document and splits it into an array of lines
-	const text = activeEditor.document.getText().split('\n');
-
-	//Creates an array of rule types, the the index of the array being the line of the document 
-	let ruleTypes = [];
-
-	for (let i = 0; i < text.length; i++) {
-		ruleTypes[i] = getRuleType(text[i]);
-	}
-
-	/*
-	Creates an array without comments and empty spaces, where in each position there is an array with 2 positons:
-		position 0 -> the rule's type
-		position 1 -> the rule's line in the document
-	*/
-	let nonReductantRules = [];
-	for (let i = 0; i < ruleTypes.length; i++) {
-		if (ruleTypes[i] == COMMENT || ruleTypes[i] == EMPTY) { }
-		else
-			nonReductantRules.push([ruleTypes[i], i]);
-	}
-
-	/*
-		Underlines and provides error message to every rule in the ASP that violates the EZASP protocol
-	*/
-	let linesToUnderline = [];
-	let hoverMessages = [];
-
-	/*
-	const startPosition = new vscode.Position(activeEditor.document.lineAt(0),1);
-	const endPosition = new vscode.Position(activeEditor.document.lineAt(0), startPosition.character+9);
-	const range = new vscode.Range(startPosition, endPosition);
-	linesToUnderline.push(range);
-	*/
-
-	//Shows error if rules are invalid
-	for(let i = 0; i < nonReductantRules.length; i++){
-		if(nonReductantRules[i][0] == INVALID_RULE){
-			const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(range);
-			hoverMessages.push("Invalid Rule.")
-		}
-	}
-
-	//Shows error if fact is in the wrong place
-	let lastLineisFact = true;
-	for(let i = 0; i < nonReductantRules.length; i++){
-		if(lastLineisFact && nonReductantRules[i][0] != FACT){
-			lastLineisFact = false;
-		}
-		if(nonReductantRules[i][0] == FACT && !lastLineisFact){
-			const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(range);
-			hoverMessages.push("Error, all facts must be before choices.")
-		}
-	}
-
-	//Shows error if choice is in the wrong place
-	let lastLineisChoice = true;
-	for(let i = 0; i < nonReductantRules.length; i++){
-		if(nonReductantRules[i][0] == FACT){}
-		else if(lastLineisChoice && nonReductantRules[i][0] != CHOICE){
-			lastLineisChoice = false;
-		}
-		if(nonReductantRules[i][0] == CHOICE && !lastLineisChoice){
-			const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(range);
-			hoverMessages.push("Error, all choices must be between facts and rules.")
-		}
-	}
-
-	//Shows error if rule is in the wrong place
-	let lastLineisRule = true;
-	for(let i = 0; i < nonReductantRules.length; i++){
-		if(nonReductantRules[i][0] == FACT){}
-		else if(nonReductantRules[i][0] == CHOICE){}
-		else if(lastLineisRule && nonReductantRules[i][0] != DEFINITION){
-			lastLineisRule = false;
-		}
-		if(nonReductantRules[i][0] == DEFINITION && !lastLineisRule){
-			const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(range);
-			hoverMessages.push("Error, all rules must be between choices and constraints.")
-		}
-	}
-
-	//Shows error if constraint is in the wrong place
-	let lastLineisConstraint = true;
-	for(let i = 0; i < nonReductantRules.length; i++){
-		if(nonReductantRules[i][0] == FACT){}
-		else if(nonReductantRules[i][0] == CHOICE){}
-		else if(nonReductantRules[i][0] == DEFINITION){}
-		else if(lastLineisConstraint && nonReductantRules[i][0] != CONSTRAINT){
-			lastLineisConstraint = false;
-		}
-		if(nonReductantRules[i][0] == CONSTRAINT && !lastLineisConstraint){
-			const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(range);
-			hoverMessages.push("Error, all constraints must be between rules and views.")
-		}
-	}
-
-	//Shows error if view is in the wrong place
-	let lastLineisView = true;
-	for(let i = 0; i < nonReductantRules.length; i++){
-		if(nonReductantRules[i][0] == FACT){}
-		else if(nonReductantRules[i][0] == CHOICE){}
-		else if(nonReductantRules[i][0] == DEFINITION){}
-		else if(nonReductantRules[i][0] == CONSTRAINT){}
-		else if(lastLineisView && nonReductantRules[i][0] != SHOW_STATEMEMENT){
-			lastLineisView = false;
-		}
-		if(nonReductantRules[i][0] == SHOW_STATEMEMENT && !lastLineisView){
-			const range = activeEditor.document.lineAt(nonReductantRules[i][1]).range;
-			linesToUnderline.push(range);
-			hoverMessages.push("Error, all views must be after constraints.")
-		}
-	}
-
-
-
-	return [linesToUnderline, hoverMessages];
-}
-
-module.exports = { loadUnderlineDummy, loadUnderline }
+module.exports = { loadUnderline }

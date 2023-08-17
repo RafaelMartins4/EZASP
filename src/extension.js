@@ -1,6 +1,29 @@
 const vscode = require('vscode');
 
-const { loadUnderline, loadUnderlineDummy } = require('../src/engine/loadUnderline');
+const { loadUnderline } = require('../src/engine/loadUnderline');
+
+function convertRange(range){
+	const startPosition = new vscode.Position(range.lineStart, range.indexStart);
+	const endPosition = new vscode.Position(range.lineEnd, range.indexEnd);
+	const rangeFinal = new vscode.Range(startPosition, endPosition);
+	return rangeFinal;
+}
+
+/**
+ * @param {string} text
+ */
+function getRanges(text){
+	const data = loadUnderline(text);
+
+	const results = [];
+
+	data[0].forEach(range => {
+		results.push(convertRange(range));
+	})
+
+	return [results,data[1]];
+}
+
 
 
 /**
@@ -13,12 +36,12 @@ function activate(context) {
 	
 	//Loads the underlines in the editor, and reloads on every change on the document
 	const activeEditor = vscode.window.activeTextEditor;
-	let results = loadUnderline(activeEditor);
+	let results = getRanges(activeEditor.document.getText());
 	activeEditor.setDecorations(underlineRed, results[0]);
 	console.log(results);
 
 	vscode.workspace.onDidChangeTextDocument(() => {
-		results = loadUnderline(activeEditor);
+		results = getRanges(activeEditor.document.getText());
 		activeEditor.setDecorations(underlineRed, results[0]);
 		console.log(results);
 	});

@@ -26,18 +26,18 @@ function formatText(text){
 				if(line[1].includes('*%')){
 					const split = comment.split('*%')
 					formattedText.push(split[0].concat('*%').trim());
-					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(split[0].concat('*%').trim()), indexEnd:split[0].concat('*%').trim().length-1});
+					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(split[0].concat('*%').trim()), indexEnd:split[0].concat('*%').trim().length});
 					if(split[1].includes('%')){
 						temp = temp.concat(split[1].trim().split('%')[0]).trim()
 						formattedText.push(temp);
-						lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(temp), indexEnd:text[i].indexOf(temp)+temp.length-1});
+						lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(temp), indexEnd:text[i].indexOf(temp)+temp.length});
 						formattedText.push('%'.concat(split[1].split('%')[1]).trim());
-						lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf('%'.concat(split[1].split('%')[1]).trim()), indexEnd:text[i].length-1});
+						lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf('%'.concat(split[1].split('%')[1]).trim()), indexEnd:text[i].length});
 					}
 					else if(split[1].trim() != ""){
 						const a = temp.concat(split[1].trim());
 						formattedText.push(a);
-						lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:text[i].length-1});
+						lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:text[i].length});
 					}
 				}
 				else{
@@ -47,7 +47,7 @@ function formatText(text){
 							let tmp = text[j].split('*%', 2);
 							comment = comment.concat(tmp[0]).concat('*%');
 							formattedText.push(comment.trim());
-							lines.push({lineStart: i, lineEnd:j, indexStart:0, indexEnd:text[j].length-1});
+							lines.push({lineStart: i, lineEnd:j, indexStart:0, indexEnd:text[j].length});
 							if (text[j + 1])
 								text[j + 1] = tmp[1].concat(text[j + 1]);
 							else
@@ -64,7 +64,7 @@ function formatText(text){
 			}
 		else if (text[i].startsWith('%')){
 			formattedText.push(text[i].trim());
-			lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:text[i].length-1});
+			lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:text[i].length});
 		}
 		else if (text[i].includes('%')){
 			const split = text[i].split('%',2);
@@ -86,13 +86,13 @@ function formatText(text){
 				for(let j = 0; j<rules.length-a; j++){
 					const b = rules[j].trim().concat('.')
 					formattedText.push(b)
-					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(b), indexEnd:text[i].indexOf(b)+b.length-1});
+					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(b), indexEnd:text[i].indexOf(b)+b.length});
 				}
 
 				if(lastEndsWithDot){
 					const b = rules[rules.length-a].trim().concat('.');
 					formattedText.push(b)
-					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(b), indexEnd:text[i].indexOf(b)+b.length-1});
+					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(b), indexEnd:text[i].indexOf(b)+b.length});
 				}
 				if(!lastEndsWithDot){
 					if(text.length == i+1){
@@ -109,7 +109,7 @@ function formatText(text){
 			}
 			const c = '%'.concat(split[1]).trim()
 			formattedText.push(c)
-			lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(c), indexEnd:text[i].indexOf(c)+c.length-1});
+			lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(c), indexEnd:text[i].indexOf(c)+c.length});
 		}
 		else if (!text[i].includes('.') && text[i].trim() != "") {
 			let start = i;
@@ -122,7 +122,7 @@ function formatText(text){
 					let tmp = text[j].split('.', 2);
 					rule = rule.concat(tmp[0]).concat('.');
 					formattedText.push(rule.trim());
-					lines.push({lineStart: start, lineEnd:j, indexStart:text[start].indexOf(rule[0]), indexEnd:text[j].length-1});
+					lines.push({lineStart: start, lineEnd:j, indexStart:text[start].indexOf(rule[0]), indexEnd:text[j].length});
 					dotFound = true;
 				}
 				else {
@@ -141,9 +141,9 @@ function formatText(text){
 						isNextLineEmpty = false;
 				}
 				if(text[i-1].includes('%'))
-					lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].lastIndexOf(rule[0]+rule[1]), indexEnd:text[i-1].lastIndexOf(rule[0]+rule[1]) + rule.length-1});
+					lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].lastIndexOf(rule[0]+rule[1]), indexEnd:text[i-1].lastIndexOf(rule[0]+rule[1]) + rule.length});
 				else
-					lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].indexOf(rule[0]+rule[1]), indexEnd:text[i-1].length-1});
+					lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].indexOf(rule[0]+rule[1]), indexEnd:text[i-1].length});
 				}
 		}
 		else if (text[i] != "") {
@@ -154,13 +154,13 @@ function formatText(text){
 				for (let j = 0; j < split.length - 1; j++){
 					const b = split[j].concat('.').trim();
 					formattedText.push(b)
-					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(b), indexEnd:text[i].indexOf(b)+b.length-1});
+					lines.push({lineStart: i, lineEnd:i, indexStart:text[i].indexOf(b), indexEnd:text[i].indexOf(b)+b.length});
 					const c = "O".repeat(text[i].lastIndexOf("O") + b.length + 1);
 					text[i] = c + text[i].slice(text[i].lastIndexOf("O") + b.length + 1);
 				}
 			else{
 				formattedText.push(text[i].trim());
-				lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:originalText[i].length-1});
+				lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:originalText[i].length});
 			}
 			lastRuleNoDot = false;
 		}
