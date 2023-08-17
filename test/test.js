@@ -784,7 +784,7 @@ describe('Extension', function () {
       let file = readFileSync(PATH + '/loadUnderline/test13_rules.lp').toLocaleString();
 
       const result = loadUnderline(file);
-      assert.deepEqual(result, [[0], ["//TODO"]]);
+      assert.deepEqual(result, [[], ["//TODO"]]);
     });
 
     it('test 14 - rules should come only after choices 1', function () {
@@ -830,7 +830,7 @@ describe('Extension', function () {
       let file = readFileSync(PATH + '/loadUnderline/test18_constraints.lp').toLocaleString();
 
       const result = loadUnderline(file);
-      assert.deepEqual(result, [[0], ["//TODO"]]);
+      assert.deepEqual(result, [[], ["//TODO"]]);
     });
 
     it('test 19 - constraints should come only after rules 1', function () {
@@ -877,7 +877,7 @@ describe('Extension', function () {
       let file = readFileSync(PATH + '/loadUnderline/test23_views.lp').toLocaleString();
 
       const result = loadUnderline(file);
-      assert.deepEqual(result, [[0], ["//TODO"]]);
+      assert.deepEqual(result, [[], ["//TODO"]]);
     });
 
     it('test 24 - views should come only after constraints 1', function () {
