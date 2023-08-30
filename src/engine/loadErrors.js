@@ -1,8 +1,9 @@
 // @ts-ignore
-const { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE } = require('../parser/getRuleType');
+const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE } = require('../parser/getRuleType');
 
 // @ts-ignore
 const { formatText } = require('../parser/formatText');
+const { getPredicates } = require('../parser/getPredicates');
 
 const MAC_OS = 1;
 const WINDOWS = 2;
@@ -19,7 +20,7 @@ function detectOS() {
 /**
  * @param {string} textRaw
  */
-function loadUnderline(textRaw) {
+function loadErrors(textRaw) {
 
 	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
@@ -36,23 +37,13 @@ function loadUnderline(textRaw) {
 	//Gets the document and splits it into an array of lines
 	const text = textRaw.trim().split(SPLIT_CODE);
 
-	const result = formatText(text);
-	const formattedText = result.formattedText;
-	const lines = result.lines;
+	const result1 = formatText(text);
+	const formattedText = result1.formattedText;
+	const lines = result1.lines;
 
-	/*
-	Creates an array without comments and empty spaces, where in each position there is an array with 2 positons:
-		position 0 -> the rule's type
-		position 1 -> the rule's index in the array formattedText
-	*/
-	let nonReductantRules = [];
-
-	for (let i = 0; i < formattedText.length; i++) {
-		let ruleType = getRuleType(formattedText[i]);
-		if (ruleType == COMMENT || ruleType == EMPTY) { }
-		else
-			nonReductantRules.push([ruleType, i]);
-	}
+	const result2 = getPredicates(formattedText);
+	const predicates = result2.predicates;	
+	const nonReductantRules = result2.nonReductantRules;
 
 	/*
 		Underlines and provides error message to every rule in the ASP that violates the EZASP protocol
@@ -66,6 +57,12 @@ function loadUnderline(textRaw) {
 			const range = lines[nonReductantRules[i][1]];
 			rangesToUnderline.push(range);
 			hoverMessages.push("Invalid Rule.")
+		}
+	}
+
+	for (let i = 0; i < nonReductantRules.length; i++) {
+		if (nonReductantRules[i][0] == INVALID_RULE) {
+			nonReductantRules.splice(i,1);
 		}
 	}
 
@@ -94,7 +91,7 @@ function loadUnderline(textRaw) {
 			rangesToUnderline.push(range);
 			hoverMessages.push("Error, all choices must be between facts and rules.")
 		}
-	}
+	}	
 
 	//Shows error if rule is in the wrong place
 	let lastLineisRule = true;
@@ -143,8 +140,55 @@ function loadUnderline(textRaw) {
 			hoverMessages.push("Error, all views must be after constraints.")
 		}
 	}
+	
+	/*
+	for (let i = 0; i<nonReductantRules.length; i++){
+		for(const predicate of predicates[i]){
+			let args = "";
+			for(const arg of predicate.arguments){
+				if(arg != predicate.arguments[predicate.arguments.length-1])
+					args = args.concat(arg+",");
+				else
+					args = args.concat(arg);
+			}
+		}
+	}*/
+
+	const definedPredicates = [];
+	const undefinedPredicates = [];
+	for(let i = 0; i<nonReductantRules.length; i++){
+		if(nonReductantRules[i][0] == FACT)
+			for(const predicate of predicates[i].head)
+				definedPredicates.push(predicate);
+
+		else if(nonReductantRules[i][0] == CHOICE){
+			for(const predicate of predicates[i].head)
+				definedPredicates.push(predicate);
+
+			for(const predicate of predicates[i].tail)
+				undefinedPredicates.push(predicate)
+		}
+
+		else if(nonReductantRules[i][0] == DEFINITION){
+			for(const predicate of predicates[i].head)
+				definedPredicates.push(predicate);
+
+			for(const predicate of predicates[i].tail)
+				undefinedPredicates.push(predicate)
+		}
+
+		else{
+			for(const predicate of predicates[i].head)
+				if(!definedPredicates.includes(predicate))
+					undefinedPredicates.push(predicate)
+
+			for(const predicate of predicates[i].tail)
+				if(!definedPredicates.includes(predicate))
+					undefinedPredicates.push(predicate)
+		}
+	}
 
 	return [rangesToUnderline, hoverMessages];
 }
 
-module.exports = { loadUnderline }
+module.exports = { loadErrors }

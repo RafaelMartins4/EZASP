@@ -10,7 +10,9 @@
   "categories": [
     "Programming Languages"
   ],
-  "activationEvents": ["onLanguage:asp"],
+  "activationEvents": [
+    "onLanguage:asp"
+  ],
   "main": "./src/extension.js",
   "contributes": {
     "commands": [
@@ -20,30 +22,30 @@
       }
     ],
     "languages": [
-			{
-				"id": "asp",
-				"aliases": [
-					"Answer Set Programming",
-					"Answer Set",
-					"asp",
-					"Clingo",
-					"Potassco",
-					"Logic Program",
-					"Declarative Programming"
-				],
-				"extensions": [
-					".lp",
-					".ilp",
-					".cl",
-					".clp",
-					".iclp",
-					".Clp",
-					".iClp",
-					".blp",
-					".iblp"
-				]
-			}
-		]
+      {
+        "id": "asp",
+        "aliases": [
+          "Answer Set Programming",
+          "Answer Set",
+          "asp",
+          "Clingo",
+          "Potassco",
+          "Logic Program",
+          "Declarative Programming"
+        ],
+        "extensions": [
+          ".lp",
+          ".ilp",
+          ".cl",
+          ".clp",
+          ".iclp",
+          ".Clp",
+          ".iClp",
+          ".blp",
+          ".iblp"
+        ]
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",

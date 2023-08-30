@@ -7,9 +7,10 @@ const { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_
 const { formatText } = require('../src/parser/formatText');
 
 // @ts-ignore
-const { loadUnderline } = require('../src/engine/loadUnderline');
+const { loadErrors } = require('../src/engine/loadErrors');
 
 const { readFileSync } = require('fs');
+const { getPredicates } = require('../src/parser/getPredicates');
 
 const PATH = 'test/lp_tests';
 
@@ -682,399 +683,568 @@ describe('Extension', function () {
     });
   })
 
-  describe('loadUnderline', function () {
-    it('test 1 - empty file should not underline anything', function () {
+  describe('getPredicates', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test1_empty.lp').toLocaleString();
+    it('one fact without arguments', function () {
 
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
+      const result = getPredicates(["rule."]).predicates;
+      const expected = [{head:[{name:"rule",arguments:[]}], tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 2 - easy answer set program should not underline anything', function () {
+    it('one fact with arguments', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test2_ezasp.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
+      const result = getPredicates(["rule(arg1,arg2)."]).predicates;
+      const expected = [{head: [{ name: "rule", arguments: ["arg1", "arg2"]}], tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 3 - facts should come only before choices 1', function () {
+    it('one fact with one argument (separated with a semicolon)', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test3_facts.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      const result = getPredicates(["rule(arg1;arg2;arg3)."]).predicates;
+      const expected = [{head:[{ name: "rule", arguments: ["arg1"] },
+                               { name: "rule", arguments: ["arg2"] },
+                               { name: "rule", arguments: ["arg3"] }],
+                        tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 4 - facts should come only before choices 2', function () {
+    it('one fact with two arguments (separated with a semicolon)', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test4_facts.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      const result = getPredicates(["rule(arg1,arg2;arg3,arg4)."]).predicates;
+      const expected = [{head: [{ name: "rule", arguments: ["arg1", "arg2"] },
+                                { name: "rule", arguments: ["arg3", "arg4"] }],
+                        tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 5 - facts should come only before choices 3', function () {
+    it('one fact with numerical arguments (separated with two dots)', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test5_facts.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      const result = getPredicates(["rule(1..3)."]).predicates;
+      const expected = [{head:[{ name: "rule", arguments: ["1..3"] }],
+                         tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 6 - facts should come only before choices 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test6_facts.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+    it('one choice with one predicate without arguments', function () {
+      const result = getPredicates(["{rule}."]).predicates;
+      const expected = [{head:[{ name: "rule", arguments: [] }], tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 7 - facts should come only before choices 5', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test7_facts.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+    it('one choice with two predicates without arguments', function () {
+      const result = getPredicates(["{rule1} :- rule2."]).predicates;
+      const expected = [{head:[{ name: "rule1", arguments: [] }],
+                         tail:[{ name: "rule2", arguments: [] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 8 - choices should come only after facts 0', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test8_choices.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 8 }], ["Error, all facts must be before choices."]]);
+    it('one choice with two predicates with arguments', function () {
+      const result = getPredicates(["{rule1(arg1,arg2)} :- rule2(arg3,arg4)."]).predicates;
+      const expected = [{head:[{ name: "rule1", arguments: ["arg1", "arg2"] }],
+                         tail:[{ name: "rule2", arguments: ["arg3", "arg4"] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 9 - choices should come only after facts 1', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test9_choices.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
+    it('one choice with two predicates with arguments (one separated with a semicolon)', function () {
+      const result = getPredicates(["{rule1(arg1,arg2;arg3,arg4)} :- rule2(arg5,arg6)."]).predicates;
+      const expected = [{head:[{ name: "rule1", arguments: ["arg1", "arg2"] },
+                               { name: "rule1", arguments: ["arg3", "arg4"] }],
+                         tail:[{ name: "rule2", arguments: ["arg5", "arg6"] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 10 - choices should come only after facts 2', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test10_choices.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be between facts and rules."]]);
+    it('one definition with two predicates without arguments', function () {
+      const result = getPredicates(["rule2 :- rule1."]).predicates;
+      const expected = [{head:[{ name: "rule2", arguments: [] }],
+                         tail:[{ name: "rule1", arguments: [] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 11 - choices should come only after facts 3', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test11_choices.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be between facts and rules."]]);
+    it('one definition with four predicates with arguments', function () {
+      const result = getPredicates(["rule4(X,Y,Z) :- rule1(X), rule2(Y), rule3(Z)."]).predicates;
+      const expected = [{head:[{ name: "rule4", arguments: ["X", "Y", "Z"] }],
+                         tail:[{ name: "rule1", arguments: ["X"] },
+                               { name: "rule2", arguments: ["Y"] },
+                               { name: "rule3", arguments: ["Z"] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 12 - choices should come only after facts 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test12_choices.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be between facts and rules."]]);
+    it('one constraint with one predicate without arguments', function () {
+      const result = getPredicates([":- rule."]).predicates;
+      const expected = [{head: [], tail: [{ name: "rule", arguments: [] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 13 - rules should come only after choices 0', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test13_rules.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], ["//TODO"]]);
+    it('one constraint with 3 predicates with arguments', function () {
+      const result = getPredicates([":- rule1(arg1,arg2), rule2(X), rule3(Y), X!=Y."]).predicates;
+      const expected = [{head:[],
+                         tail:[{ name: "rule1", arguments: ["arg1", "arg2"] },
+                               { name: "rule2", arguments: ["X"] },
+                               { name: "rule3", arguments: ["Y"] }]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 14 - rules should come only after choices 1', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test14_rules.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
-      { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
-      { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 }
-      ],
-      ["Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules."]]);
+    it('one show statement with one predicate with 4 arguments', function () {
+      const result = getPredicates(["#show rule/4."]).predicates;
+      const expected = [{head:[{ name: "rule", arguments: [] }], tail: []}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 15 - rules should come only after choices 2', function () {
+    it('ASP program test 1', function () {
+      const result = getPredicates(["rule1.",
+        "{rule2}.",
+        "rule3 :- rule1.",
+        ":- rule4",
+        "#show rule5/0."]).predicates;
 
-      let file = readFileSync(PATH + '/loadUnderline/test15_rules.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
+      const expected = [{head:[{ name: "rule1", arguments: [] }], tail:[]},
+                        {head:[{ name: "rule2", arguments: [] }], tail:[]},
+                        {head:[{ name: "rule3", arguments: [] }], tail:[{ name: "rule1", arguments: [] }]},
+                        {head:[], tail:[{ name: "rule4", arguments: [] }]},
+                        {head:[{ name: "rule5", arguments: [] }], tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
-    it('test 16 - rules should come only after choices 3', function () {
+    it('ASP program test 2', function () {
+      const result = getPredicates(["n(1..9).",
+        "1{in(X,Y,N):n(N)}1 :- n(Y), n(X).",
+        "1{in(X,Y,N):n(Y)}1 :- n(X), n(N).",
+        "1{in(X,Y,N):n(X)}1 :- n(Y), n(N).",
+        "subgrid(X,Y,Z,W) :- n(X), n(Y), n(Z), n(W), (X-1)/3=(Z-1)/3,(Y-1)/3=(W-1)/3.",
+        ":- subgrid(X,Y,Z,W), in(X,Y,N), in(Z,W,N), X!=Z, Y!=W.",
+        "#show in/3."]).predicates;
 
-      let file = readFileSync(PATH + '/loadUnderline/test16_rules.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 25 }], ["Error, all rules must be between choices and constraints."]]);
-    });
-
-    it('test 17 - rules should come only after choices 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test17_rules.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 25 }], ["Error, all rules must be between choices and constraints."]]);
-    });
-
-    it('test 18 - constraints should come only after rules 0', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test18_constraints.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], ["//TODO"]]);
-    });
-
-    it('test 19 - constraints should come only after rules 1', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test19_constraints.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
-      { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
-      { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
-      { lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 }],
-      ["Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all rules must be between choices and constraints."]]);
-    });
-
-    it('test 20 - constraints should come only after rules 2', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test20_constraints.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 }], ["Error, all rules must be between choices and constraints."]]);
-    });
-
-    it('test 21 - constraints should come only after rules 3', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test21_constraints.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 22 - constraints should come only after rules 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test22_constraints.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 14 }], ["Error, all constraints must be between rules and views."]]);
-    });
-
-    it('test 23 - views should come only after constraints 0', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test23_views.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], ["//TODO"]]);
-    });
-
-    it('test 24 - views should come only after constraints 1', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test24_views.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
-      { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
-      { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
-      { lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 },
-      { lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 }],
-      ["Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all rules must be between choices and constraints.",
-        "Error, all constraints must be between rules and views."
-      ]]);
-    });
-
-    it('test 25 - views should come only after constraints 2', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test25_views.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 },
-      { lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 }],
-      ["Error, all rules must be between choices and constraints.",
-        "Error, all constraints must be between rules and views."]]);
-    });
-
-    it('test 26 - views should come only after constraints 3', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test26_views.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 }], ["Error, all constraints must be between rules and views."]]);
-    });
-
-    it('test 27 - views should come only after constraints 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test27_views.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 28 - test on an ASP with multiple rules 0', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test28_multiple.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 29 -test on an ASP with multiple rules 1', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test29_multiple.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 2 },
-      { lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 2 }],
-      ["Error, all facts must be before choices.",
-        "Error, all facts must be before choices."]]);
-    });
-
-    it('test 30 - test on an ASP with multiple rules 2', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test30_multiple.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 4 },
-      { lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 4 }],
-      ["Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules."]]);
-    });
-
-    it('test 31 - test on an ASP with multiple rules 3', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test31_multiple.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 7 },
-      { lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 7 }],
-      ["Error, all rules must be between choices and constraints.",
-        "Error, all rules must be between choices and constraints."]]);
-    });
-
-    it('test 32 - test on an ASP with multiple rules 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test32_multiple.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 2 },
-      { lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 2 },
-      { lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 4 },
-      { lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 4 },
-      { lineStart: 21, lineEnd: 21, indexStart: 0, indexEnd: 7 },
-      { lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 7 }],
-      ["Error, all facts must be before choices.",
-        "Error, all facts must be before choices.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all rules must be between choices and constraints.",
-        "Error, all rules must be between choices and constraints."]]);
-    });
-
-    it('test 33 - randomised test 1', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test33_random.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 2 },
-      { lineStart: 21, lineEnd: 21, indexStart: 0, indexEnd: 2 },
-      { lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 2 },
-      { lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 4 },
-      { lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 4 },
-      { lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 4 },
-      { lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 5 },
-      { lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 5 },
-      { lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 5 },
-      { lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 5 },
-      { lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 4 },
-      { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 4 }],
-      ["Invalid Rule.",
-        "Invalid Rule.",
-        "Error, all facts must be before choices.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all choices must be between facts and rules.",
-        "Error, all rules must be between choices and constraints.",
-        "Error, all rules must be between choices and constraints.",
-        "Error, all rules must be between choices and constraints.",
-        "Error, all rules must be between choices and constraints.",
-        "Error, all constraints must be between rules and views.",
-        "Error, all constraints must be between rules and views."]]);
+      const expected = [{head:[{ name: "n", arguments: ["1..9"] }],
+                         tail:[]},
+                        {head:[{ name: "in", arguments: ["X", "Y", "N"] }, { name: "n", arguments: ["N"] }], 
+                         tail:[{ name: "n", arguments: ["Y"] }, { name: "n", arguments: ["X"] }]},
+                        {head:[{ name: "in", arguments: ["X", "Y", "N"] }, { name: "n", arguments: ["Y"] }], 
+                        tail:[{ name: "n", arguments: ["X"] }, { name: "n", arguments: ["N"] }]},
+                        {head:[{ name: "in", arguments: ["X", "Y", "N"] }, { name: "n", arguments: ["X"] }], 
+                        tail: [{ name: "n", arguments: ["Y"] }, { name: "n", arguments: ["N"] }]},
+                        {head:[{ name: "subgrid", arguments: ["X", "Y", "Z", "W"] }], 
+                         tail:[{ name: "n", arguments: ["X"] }, { name: "n", arguments: ["Y"] }, { name: "n", arguments: ["Z"] }, { name: "n", arguments: ["W"] }]},
+                        {head:[], 
+                         tail:[{ name: "subgrid", arguments: ["X", "Y", "Z", "W"] }, { name: "in", arguments: ["X", "Y", "N"] }, { name: "in", arguments: ["Z", "W", "N"] }]},
+                        {head:[{ name: "in", arguments: [] }], 
+                         tail:[]}];
+      assert.deepEqual(result, expected);
     });
 
 
 
-    it('test 34 - answer set programs testing 1', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test34_program.lp').toLocaleString();
 
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
+  });
+
+  describe('loadErrors', function () {
+
+    describe('Order Tests', function () {
+      it('test 1 - empty file should not underline anything', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test1_empty.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 2 - easy answer set program should not underline anything', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test2_ezasp.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 3 - facts should come only before choices 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test3_facts.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      });
+
+      it('test 4 - facts should come only before choices 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test4_facts.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      });
+
+      it('test 5 - facts should come only before choices 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test5_facts.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      });
+
+      it('test 6 - facts should come only before choices 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test6_facts.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      });
+
+      it('test 7 - facts should come only before choices 5', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test7_facts.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be before choices."]]);
+      });
+
+      it('test 8 - choices should come only after facts 0', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test8_choices.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 8 }], ["Error, all facts must be before choices."]]);
+      });
+
+      it('test 9 - choices should come only after facts 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test9_choices.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 10 - choices should come only after facts 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test10_choices.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be between facts and rules."]]);
+      });
+
+      it('test 11 - choices should come only after facts 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test11_choices.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be between facts and rules."]]);
+      });
+
+      it('test 12 - choices should come only after facts 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test12_choices.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be between facts and rules."]]);
+      });
+
+      it('test 13 - rules should come only after choices 0', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test13_rules.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], ["//TODO"]]);
+      });
+
+      it('test 14 - rules should come only after choices 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test14_rules.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
+        { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
+        { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 }
+        ],
+        ["Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules."]]);
+      });
+
+      it('test 15 - rules should come only after choices 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test15_rules.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 16 - rules should come only after choices 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test16_rules.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 25 }], ["Error, all rules must be between choices and constraints."]]);
+      });
+
+      it('test 17 - rules should come only after choices 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test17_rules.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 25 }], ["Error, all rules must be between choices and constraints."]]);
+      });
+
+      it('test 18 - constraints should come only after rules 0', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test18_constraints.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], ["//TODO"]]);
+      });
+
+      it('test 19 - constraints should come only after rules 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test19_constraints.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
+        { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
+        { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
+        { lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 }],
+        ["Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all rules must be between choices and constraints."]]);
+      });
+
+      it('test 20 - constraints should come only after rules 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test20_constraints.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 }], ["Error, all rules must be between choices and constraints."]]);
+      });
+
+      it('test 21 - constraints should come only after rules 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test21_constraints.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 22 - constraints should come only after rules 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test22_constraints.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 14 }], ["Error, all constraints must be between rules and views."]]);
+      });
+
+      it('test 23 - views should come only after constraints 0', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test23_views.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], ["//TODO"]]);
+      });
+
+      it('test 24 - views should come only after constraints 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test24_views.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
+        { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
+        { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
+        { lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 },
+        { lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 }],
+        ["Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all rules must be between choices and constraints.",
+          "Error, all constraints must be between rules and views."
+        ]]);
+      });
+
+      it('test 25 - views should come only after constraints 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test25_views.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 },
+        { lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 }],
+        ["Error, all rules must be between choices and constraints.",
+          "Error, all constraints must be between rules and views."]]);
+      });
+
+      it('test 26 - views should come only after constraints 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test26_views.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 }], ["Error, all constraints must be between rules and views."]]);
+      });
+
+      it('test 27 - views should come only after constraints 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test27_views.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 28 - test on an ASP with multiple rules 0', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test28_multiple.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 29 -test on an ASP with multiple rules 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test29_multiple.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 2 },
+        { lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 2 }],
+        ["Error, all facts must be before choices.",
+          "Error, all facts must be before choices."]]);
+      });
+
+      it('test 30 - test on an ASP with multiple rules 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test30_multiple.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 4 },
+        { lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 4 }],
+        ["Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules."]]);
+      });
+
+      it('test 31 - test on an ASP with multiple rules 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test31_multiple.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 7 },
+        { lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 7 }],
+        ["Error, all rules must be between choices and constraints.",
+          "Error, all rules must be between choices and constraints."]]);
+      });
+
+      it('test 32 - test on an ASP with multiple rules 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test32_multiple.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 2 },
+        { lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 2 },
+        { lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 4 },
+        { lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 4 },
+        { lineStart: 21, lineEnd: 21, indexStart: 0, indexEnd: 7 },
+        { lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 7 }],
+        ["Error, all facts must be before choices.",
+          "Error, all facts must be before choices.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all rules must be between choices and constraints.",
+          "Error, all rules must be between choices and constraints."]]);
+      });
+
+      it('test 33 - randomised test 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test33_random.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 2 },
+        { lineStart: 21, lineEnd: 21, indexStart: 0, indexEnd: 2 },
+        { lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 2 },
+        { lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 4 },
+        { lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 4 },
+        { lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 4 },
+        { lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 5 },
+        { lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 5 },
+        { lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 5 },
+        { lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 5 },
+        { lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 4 },
+        { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 4 }],
+        ["Invalid Rule.",
+          "Invalid Rule.",
+          "Error, all facts must be before choices.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all choices must be between facts and rules.",
+          "Error, all rules must be between choices and constraints.",
+          "Error, all rules must be between choices and constraints.",
+          "Error, all rules must be between choices and constraints.",
+          "Error, all rules must be between choices and constraints.",
+          "Error, all constraints must be between rules and views.",
+          "Error, all constraints must be between rules and views."]]);
+      });
+
+
+
+      it('test 34 - answer set programs testing 1', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test34_program.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 35 - answer set programs testing 2', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test35_program.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 36 - answer set programs testing 3', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test36_program.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 37 - answer set programs testing 4', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test37_program.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 38 - answer set programs testing 5', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test38_program.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
+      });
+
+      it('test 39 - formatText + range testing', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test39_format.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 2 },
+        { lineStart: 9, lineEnd: 9, indexStart: 2, indexEnd: 4 },
+        { lineStart: 9, lineEnd: 9, indexStart: 4, indexEnd: 6 },
+        { lineStart: 9, lineEnd: 9, indexStart: 6, indexEnd: 8 },
+        { lineStart: 9, lineEnd: 9, indexStart: 8, indexEnd: 10 },
+        { lineStart: 9, lineEnd: 12, indexStart: 10, indexEnd: 1 }],
+        ["Error, all facts must be before choices.",
+          "Error, all facts must be before choices.",
+          "Error, all facts must be before choices.",
+          "Error, all facts must be before choices.",
+          "Error, all facts must be before choices.",
+          "Error, all facts must be before choices."]]);
+      });
     });
 
-    it('test 35 - answer set programs testing 2', function () {
+    describe('Dependencies Tests', function () {
+      it('test 40 - program without facts', function () {
 
-      let file = readFileSync(PATH + '/loadUnderline/test35_program.lp').toLocaleString();
+        let file = readFileSync(PATH + '/loadErrors/test40_dependencies.lp').toLocaleString();
 
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 36 - answer set programs testing 3', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test36_program.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 37 - answer set programs testing 4', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test37_program.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 38 - answer set programs testing 5', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test38_program.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[], []]);
-    });
-
-    it('test 39 - formatText + range testing', function () {
-
-      let file = readFileSync(PATH + '/loadUnderline/test39_format.lp').toLocaleString();
-
-      const result = loadUnderline(file);
-      assert.deepEqual(result, [[{ lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 2 },
-      { lineStart: 9, lineEnd: 9, indexStart: 2, indexEnd: 4 },
-      { lineStart: 9, lineEnd: 9, indexStart: 4, indexEnd: 6 },
-      { lineStart: 9, lineEnd: 9, indexStart: 6, indexEnd: 8 },
-      { lineStart: 9, lineEnd: 9, indexStart: 8, indexEnd: 10 },
-      { lineStart: 9, lineEnd: 12, indexStart: 10, indexEnd: 1 }],
-      ["Error, all facts must be before choices.",
-        "Error, all facts must be before choices.",
-        "Error, all facts must be before choices.",
-        "Error, all facts must be before choices.",
-        "Error, all facts must be before choices.",
-        "Error, all facts must be before choices."]]);
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{ lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 33 }], 
+                                   ["Error, atoms n(N), n(Y) and n(Y) do not occur in any rule head"]]);
+      });
     });
   });
 });
