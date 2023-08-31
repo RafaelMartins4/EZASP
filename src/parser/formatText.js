@@ -12,7 +12,13 @@ function formatText(text){
 
 	let formattedText = [];
 	let lastRuleNoDot = false;
-	for (let i = 0; i < text.length; i++) {
+
+	let i = 0;
+
+	if(text[0] == "")
+		i = 1;
+
+	for (i; i < text.length; i++) {
 		if(text[i].includes('..'))
 			text[i] = text[i].replace(/\.\./g,TEMP)
 		if (text[i].trim() == '' && !lastRuleNoDot) {
@@ -197,6 +203,15 @@ function formatText(text){
 				i = j - 1;
 			}
 	}
+
+	for (let j = formattedText.length-1; j != -1; j--) {
+		if (formattedText[j] == "") {
+			formattedText.splice(j, 1);
+			lines.splice(j, 1);
+		}
+		else break;
+	  }
+
 	return {formattedText: formattedText, lines: lines};
 }
 

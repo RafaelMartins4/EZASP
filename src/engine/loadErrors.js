@@ -18,6 +18,42 @@ function detectOS() {
 }
 
 /**
+ * @param {any[]} strings
+ */
+function hasUppercase(strings) {
+	let result = false;
+	for (const string of strings) {
+	  if (!string.match(/[0-9]/) && string[0].toUpperCase() == string[0])
+		result = true;
+	}
+	return result;
+}
+
+
+
+/**
+ * @param {{ name: string; arguments: string[]; }} predicate
+
+
+function formatPredicate(predicate){
+	if(predicate.arguments.length == 0)
+		return predicate.name;
+
+	else{
+		let args = "";
+		for(const arg of predicate.arguments){
+			if(arg != predicate.arguments[predicate.arguments.length-1])
+				args = args.concat(arg+",");
+			else
+				args = args.concat(arg);
+		}
+
+		return predicate.name+"("+args+")";
+	}
+}
+*/
+
+/**
  * @param {string} textRaw
  */
 function loadErrors(textRaw) {
@@ -35,7 +71,7 @@ function loadErrors(textRaw) {
 		SPLIT_CODE = '\n';
 
 	//Gets the document and splits it into an array of lines
-	const text = textRaw.trim().split(SPLIT_CODE);
+	const text = textRaw.split(SPLIT_CODE);
 
 	const result1 = formatText(text);
 	const formattedText = result1.formattedText;
@@ -140,51 +176,44 @@ function loadErrors(textRaw) {
 			hoverMessages.push("Error, all views must be after constraints.")
 		}
 	}
-	
-	/*
-	for (let i = 0; i<nonReductantRules.length; i++){
-		for(const predicate of predicates[i]){
-			let args = "";
-			for(const arg of predicate.arguments){
-				if(arg != predicate.arguments[predicate.arguments.length-1])
-					args = args.concat(arg+",");
-				else
-					args = args.concat(arg);
-			}
-		}
-	}*/
 
 	const definedPredicates = [];
-	const undefinedPredicates = [];
 	for(let i = 0; i<nonReductantRules.length; i++){
-		if(nonReductantRules[i][0] == FACT)
-			for(const predicate of predicates[i].head)
-				definedPredicates.push(predicate);
+		const names = [];
+		for(const definedPredicate of definedPredicates)
+			names.push(definedPredicate.name);
 
-		else if(nonReductantRules[i][0] == CHOICE){
-			for(const predicate of predicates[i].head)
-				definedPredicates.push(predicate);
-
-			for(const predicate of predicates[i].tail)
-				undefinedPredicates.push(predicate)
+		for(const predicate of predicates[i].head){
+			const tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
+			if(!tmp.includes(':'))
+				definedPredicates.push(predicate)
+			else if(!tmp.split(':')[1].includes(predicate.name))
+				definedPredicates.push(predicate)
+			else if(!hasUppercase(predicate.arguments))
+				definedPredicates.push(predicate)
+			else{
+				if(rangesToUnderline.includes(lines[nonReductantRules[i][1]])){
+					const a = rangesToUnderline.indexOf(lines[nonReductantRules[i][1]])
+					hoverMessages.splice(a,a,hoverMessages[a]+"; Error, predicate \""+predicate.name+"\" is not defined yet")
+				}
+				else{
+					rangesToUnderline.push(lines[nonReductantRules[i][1]]);
+					hoverMessages.push("Error, predicate \""+predicate.name+"\" is not defined yet")
+				}
+			}
 		}
 
-		else if(nonReductantRules[i][0] == DEFINITION){
-			for(const predicate of predicates[i].head)
-				definedPredicates.push(predicate);
-
-			for(const predicate of predicates[i].tail)
-				undefinedPredicates.push(predicate)
-		}
-
-		else{
-			for(const predicate of predicates[i].head)
-				if(!definedPredicates.includes(predicate))
-					undefinedPredicates.push(predicate)
-
-			for(const predicate of predicates[i].tail)
-				if(!definedPredicates.includes(predicate))
-					undefinedPredicates.push(predicate)
+		for(const predicate of predicates[i].tail){
+			if(!names.includes(predicate.name)){
+				if(rangesToUnderline.includes(lines[nonReductantRules[i][1]])){
+					const a = rangesToUnderline.indexOf(lines[nonReductantRules[i][1]])
+					hoverMessages.splice(a,a,hoverMessages[a]+"; Error, predicate \""+predicate.name+"\" is not defined yet")
+				}
+				else{
+					rangesToUnderline.push(lines[nonReductantRules[i][1]]);
+					hoverMessages.push("Error, predicate \""+predicate.name+"\" is not defined yet")
+				}
+			}
 		}
 	}
 

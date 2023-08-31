@@ -681,6 +681,30 @@ describe('Extension', function () {
         { lineStart: 9, lineEnd: 12, indexStart: 10, indexEnd: 1 }]
       });
     });
+
+    it('bug correting test 1', function () {
+
+      let file = readFileSync(PATH + '/formatText/test13_bug_found.lp').toLocaleString();
+
+      const result = formatText(file.split(SPLIT_CODE));
+      assert.deepEqual(result, {
+        formattedText: [
+          "a."
+        ], lines: [{ lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 2 }]
+      });
+    });
+
+    it('bug correting test 2', function () {
+
+      let file = readFileSync(PATH + '/formatText/test14_bug_found.lp').toLocaleString();
+
+      const result = formatText(file.split(SPLIT_CODE));
+      assert.deepEqual(result, {
+        formattedText: [
+          "a."
+        ], lines: [{ lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 2 }]
+      });
+    });
   })
 
   describe('getPredicates', function () {

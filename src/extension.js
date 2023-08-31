@@ -2,6 +2,9 @@ const vscode = require('vscode');
 
 const { loadErrors } = require('./engine/loadErrors');
 
+/**
+ * @param {{ lineStart: number; indexStart: number; lineEnd: number; indexEnd: number; }} range
+ */
 function convertRange(range){
 	const startPosition = new vscode.Position(range.lineStart, range.indexStart);
 	const endPosition = new vscode.Position(range.lineEnd, range.indexEnd);
