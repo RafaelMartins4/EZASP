@@ -12,9 +12,9 @@ const INVALID_RULE = -1;
  */
 function getRuleType(rule) {
 
-	rule = rule.trim();
-
+	rule = rule.replace(/\s+/g, "");
 	rule = rule.replace(/_/g, 'a');
+
 	if (rule.includes('..')) {
 		let i = rule.indexOf('..');
 		let a = rule.charAt(i - 1);
@@ -31,38 +31,37 @@ function getRuleType(rule) {
 		rule = rule.split('%')[0].trim();
 	if (rule.startsWith("#show"))
 		return SHOW_STATEMEMENT;
-	else if (!rule.includes(':-') && !rule.includes('{') && !rule.includes('}')) {
-		if (/^[a-z][a-zA-Z0-9]*\((?:[a-zA-Z0-9]+(?:[,;][a-zA-Z0-9]+)*)\)[,;]?$/.test(rule.substring(0, rule.length - 1)))
-			return FACT;
-		else if (/^[a-z][a-zA-Z0-9]*$/.test(rule.substring(0, rule.length - 1)))
-			return FACT;
-		else
+	else if (!rule.includes(':-') && !rule.includes('{') && !rule.includes('}') && rule[0].match(/[a-z]/)) {
+		let a = 0;
+		for (let i = 0; i < rule.length; i++) {
+			if (rule[i] == '(')
+				a++;
+			if (rule[i] == ')')
+				a--;
+		}
+		if (a != 0)
 			return INVALID_RULE;
+
+		if (rule[rule.length - 2].match(/[a-zA-Z]/) || rule[rule.length - 2].match(/[0-9]/))
+			return FACT;
+		else {
+			for (let i = rule.length-2; i > 0; i--)
+				if (rule[i] != ')')
+					if (rule[i].match(/[a-zA-Z]/) || rule[i].match(/[0-9]/))
+						return FACT;
+					else
+						return INVALID_RULE;
+		}
 	}
-	else if (rule.includes('{') && rule.includes('}')) {
+	else if (rule.split(':-')[0].includes('{') && rule.split(':-')[0].includes('}')) {
 		if (rule.includes(':-') && (!rule.split(':-')[0].includes('{') || !rule.split(':-')[0].includes('}')))
 			return INVALID_RULE;
 		else {
-			const split1 = rule.split('{')[0];
-			let char1 = '';
-			if (split1 != '')
-				char1 = split1[split1.length - 1];
-
-			const split2 = rule.split('}')[1];
-			let char2 = '';
-			char2 = split2[0];
-
 			const char3 = rule[rule.indexOf('{') + 1];
 			const char4 = rule[rule.indexOf('}') - 1];
 
-			if ((split1 == '' || /\d/.test(char1)) && (char2 == '.' || /\d/.test(char2)) && /[a-zA-Z]/.test(char3) && /^[a-zA-Z)]$/.test(char4)){
-				if(!(/\d/.test(char1) && /\d/.test(char2)))
-					return CHOICE;
-				else if(char1<=char2) 
-					return CHOICE;
-				else 
-					return INVALID_RULE;
-			}
+			if (/[a-zA-Z]/.test(char3) && /^[a-zA-Z)]$/.test(char4))
+				return CHOICE;
 			else
 				return INVALID_RULE;
 		}

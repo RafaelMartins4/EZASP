@@ -17,17 +17,15 @@ function detectOS() {
 	}
 }
 
-/**
- * @param {any[]} strings
- */
-function hasUppercase(strings) {
-	let result = false;
-	for (const string of strings) {
-	  if (!string.match(/[0-9]/) && string[0].toUpperCase() == string[0])
-		result = true;
+function arrayContainsObject(array, object) {
+	for (const element of array) {
+	  if (JSON.stringify(element) == JSON.stringify(object)) {
+		return true;
+	  }
 	}
-	return result;
-}
+  
+	return false;
+  }
 
 
 
@@ -178,42 +176,66 @@ function loadErrors(textRaw) {
 	}
 
 	const definedPredicates = [];
+	const undefinedPredicates = new Map();
 	for(let i = 0; i<nonReductantRules.length; i++){
-		const names = [];
-		for(const definedPredicate of definedPredicates)
-			names.push(definedPredicate.name);
-
 		for(const predicate of predicates[i].head){
 			const tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
-			if(!tmp.includes(':'))
-				definedPredicates.push(predicate)
-			else if(!tmp.split(':')[1].includes(predicate.name))
-				definedPredicates.push(predicate)
-			else if(!hasUppercase(predicate.arguments))
-				definedPredicates.push(predicate)
+			if(nonReductantRules[i][0] != SHOW_STATEMEMENT){
+				if(!tmp.includes(':'))
+					definedPredicates.push(predicate)
+				else if(!tmp.split(':')[1].includes(predicate.name))
+					definedPredicates.push(predicate)
+				else if(!arrayContainsObject(definedPredicates, predicate)){
+					if(undefinedPredicates.has(lines[nonReductantRules[i][1]])){
+						if(!undefinedPredicates.get(lines[nonReductantRules[i][1]]).includes(predicate))
+							undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
+					}
+					else
+						undefinedPredicates.set(lines[nonReductantRules[i][1]],[predicate]);
+				}
+			}
 			else{
-				if(rangesToUnderline.includes(lines[nonReductantRules[i][1]])){
-					const a = rangesToUnderline.indexOf(lines[nonReductantRules[i][1]])
-					hoverMessages.splice(a,a,hoverMessages[a]+"; Error, predicate \""+predicate.name+"\" is not defined yet")
-				}
-				else{
-					rangesToUnderline.push(lines[nonReductantRules[i][1]]);
-					hoverMessages.push("Error, predicate \""+predicate.name+"\" is not defined yet")
-				}
+				if(!arrayContainsObject(definedPredicates, predicate))
+					if(undefinedPredicates.has(lines[nonReductantRules[i][1]]))
+						undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
+					else
+						undefinedPredicates.set(lines[nonReductantRules[i][1]],[predicate]);
 			}
 		}
 
 		for(const predicate of predicates[i].tail){
-			if(!names.includes(predicate.name)){
-				if(rangesToUnderline.includes(lines[nonReductantRules[i][1]])){
-					const a = rangesToUnderline.indexOf(lines[nonReductantRules[i][1]])
-					hoverMessages.splice(a,a,hoverMessages[a]+"; Error, predicate \""+predicate.name+"\" is not defined yet")
+			if(!arrayContainsObject(definedPredicates, predicate)){
+				if(undefinedPredicates.get(lines[nonReductantRules[i][1]])){
+					if(!arrayContainsObject(undefinedPredicates.get(lines[nonReductantRules[i][1]]),predicate))
+						undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
 				}
-				else{
-					rangesToUnderline.push(lines[nonReductantRules[i][1]]);
-					hoverMessages.push("Error, predicate \""+predicate.name+"\" is not defined yet")
-				}
+				else
+					undefinedPredicates.set(lines[nonReductantRules[i][1]],[predicate]);
 			}
+		}
+	}
+
+	for(const key of undefinedPredicates.keys()){
+		if(!rangesToUnderline.includes(key))
+			rangesToUnderline.push(key)
+
+		const predicates = undefinedPredicates.get(key);
+
+		if(predicates.length == 1)
+			hoverMessages.push("Error, predicate "+predicates[0].name + "/"+ predicates[0].arguments +" is not defined yet.")
+
+		else{
+			let names = "";
+			for(let j = 0; j<predicates.length; j++)
+				if(j == 0)
+					names = names + " " + predicates[j].name + "/"+ predicates[j].arguments;
+
+				else if(j == predicates.length-1)
+					names = names + " and " + predicates[j].name + "/"+ predicates[j].arguments;
+				else
+					names = names + ", " + predicates[j].name + "/"+ predicates[j].arguments;
+
+			hoverMessages.push("Error, predicates" + names + " are not defined yet.")
 		}
 	}
 

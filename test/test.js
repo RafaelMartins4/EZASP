@@ -84,9 +84,9 @@ describe('Extension', function () {
       assert.equal(result, INVALID_RULE);
     });
 
-    it('"aa{a}." must be an invalid rule.', function () {
+    it('"aa{a}." must be a choice.', function () {
       const result = getRuleType('aa{a}.');
-      assert.equal(result, INVALID_RULE);
+      assert.equal(result, CHOICE);
     });
 
     it('"" must be empty.', function () {
@@ -129,9 +129,9 @@ describe('Extension', function () {
       assert.equal(result, INVALID_RULE);
     });
 
-    it('"a(a..b)." must be an invalid rule.', function () {
+    it('"a(a..b)." must be fact.', function () {
       const result = getRuleType('a(a..b).');
-      assert.equal(result, INVALID_RULE);
+      assert.equal(result, FACT);
     });
 
     it('"1..2." must be an invalid rule.', function () {
@@ -164,17 +164,15 @@ describe('Extension', function () {
       assert.equal(result, INVALID_RULE);
     });
 
-    it('"aa{a}aaa :- a." must be an invalid rule.', function () {
-      const result = getRuleType('1{}1 :- a.');
-      assert.equal(result, INVALID_RULE);
+    it('"aa{a}aaa :- a." must be a choice.', function () {
+      const result = getRuleType('aa{a}aaa :- a.');
+      assert.equal(result, CHOICE);
     });
 
     it('"a(1,2,3,4,5,56)." must be a fact.', function () {
       const result = getRuleType('a(1,2,3,4,5,56).');
       assert.equal(result, FACT);
     });
-
-
 
     it('"1{in(X,Y,N):n(N)}1 :- n(Y), n(X)." must be a choice.', function () {
       const result = getRuleType('1{in(X,Y,N):n(N)}1 :- n(Y), n(X).');
@@ -206,14 +204,14 @@ describe('Extension', function () {
       assert.equal(result, CHOICE);
     });
 
-    it('"a(3..1)." must be an invalid rule.', function () {
+    it('"a(3..1)." must be a fact.', function () {
       const result = getRuleType('a(3..1).');
-      assert.equal(result, INVALID_RULE);
+      assert.equal(result, FACT);
     });
 
-    it('"3{a}2." must be an invalid rule.', function () {
+    it('"3{a}2." must be a choice.', function () {
       const result = getRuleType('3{a}2.');
-      assert.equal(result, INVALID_RULE);
+      assert.equal(result, CHOICE);
     });
 
     it('"{a}2." must be a choice.', function () {
@@ -241,7 +239,30 @@ describe('Extension', function () {
       assert.equal(result, DEFINITION);
     });
 
+    it('"init(on(b3,table))." must be a fact.', function () {
+      const result = getRuleType('init(on(b3,table)).');
+      assert.equal(result, FACT);
+    });
 
+    it('"{ move(D,P,T) : disk(D), peg(P) } = 1 :- moves(M),  T = 1..M." must be a choice.', function () {
+      const result = getRuleType('{ move(D,P,T) : disk(D), peg(P) } = 1 :- moves(M),  T = 1..M.');
+      assert.equal(result, CHOICE);
+    });
+
+    it('"1 { cycle(T,U) : task(U), U != T } 1 :- task(T)." must be a choice.', function () {
+      const result = getRuleType('1 { cycle(T,U) : task(U), U != T } 1 :- task(T).');
+      assert.equal(result, CHOICE);
+    });
+
+    it('"course( 1,1,5; 1,2,5               )." must be a fact.', function () {
+      const result = getRuleType('course( 1,1,5; 1,2,5               ).');
+      assert.equal(result, FACT);
+    });
+
+    it('":- { on(D,P,T) } != 1, disk(D), moves(M), T = 1..M." must be a constraint.', function () {
+      const result = getRuleType(':- { on(D,P,T) } != 1, disk(D), moves(M), T = 1..M.');
+      assert.equal(result, CONSTRAINT);
+    });
   });
 
   describe('formatText', function () {
@@ -712,23 +733,21 @@ describe('Extension', function () {
     it('one fact without arguments', function () {
 
       const result = getPredicates(["rule."]).predicates;
-      const expected = [{head:[{name:"rule",arguments:[]}], tail:[]}];
+      const expected = [{head:[{name:"rule",arguments:0}], tail:[]}];
       assert.deepEqual(result, expected);
     });
 
     it('one fact with arguments', function () {
 
       const result = getPredicates(["rule(arg1,arg2)."]).predicates;
-      const expected = [{head: [{ name: "rule", arguments: ["arg1", "arg2"]}], tail:[]}];
+      const expected = [{head: [{ name: "rule", arguments: 2}], tail:[]}];
       assert.deepEqual(result, expected);
     });
 
     it('one fact with one argument (separated with a semicolon)', function () {
 
       const result = getPredicates(["rule(arg1;arg2;arg3)."]).predicates;
-      const expected = [{head:[{ name: "rule", arguments: ["arg1"] },
-                               { name: "rule", arguments: ["arg2"] },
-                               { name: "rule", arguments: ["arg3"] }],
+      const expected = [{head:[{ name: "rule", arguments: 1 }],
                         tail:[]}];
       assert.deepEqual(result, expected);
     });
@@ -736,8 +755,7 @@ describe('Extension', function () {
     it('one fact with two arguments (separated with a semicolon)', function () {
 
       const result = getPredicates(["rule(arg1,arg2;arg3,arg4)."]).predicates;
-      const expected = [{head: [{ name: "rule", arguments: ["arg1", "arg2"] },
-                                { name: "rule", arguments: ["arg3", "arg4"] }],
+      const expected = [{head: [{ name: "rule", arguments: 2 }],
                         tail:[]}];
       assert.deepEqual(result, expected);
     });
@@ -745,75 +763,93 @@ describe('Extension', function () {
     it('one fact with numerical arguments (separated with two dots)', function () {
 
       const result = getPredicates(["rule(1..3)."]).predicates;
-      const expected = [{head:[{ name: "rule", arguments: ["1..3"] }],
+      const expected = [{head:[{ name: "rule", arguments: 1 }],
                          tail:[]}];
       assert.deepEqual(result, expected);
     });
 
     it('one choice with one predicate without arguments', function () {
       const result = getPredicates(["{rule}."]).predicates;
-      const expected = [{head:[{ name: "rule", arguments: [] }], tail:[]}];
+      const expected = [{head:[{ name: "rule", arguments: 0 }], tail:[]}];
       assert.deepEqual(result, expected);
     });
 
     it('one choice with two predicates without arguments', function () {
       const result = getPredicates(["{rule1} :- rule2."]).predicates;
-      const expected = [{head:[{ name: "rule1", arguments: [] }],
-                         tail:[{ name: "rule2", arguments: [] }]}];
+      const expected = [{head:[{ name: "rule1", arguments: 0 }],
+                         tail:[{ name: "rule2", arguments: 0 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one choice with two predicates with arguments', function () {
       const result = getPredicates(["{rule1(arg1,arg2)} :- rule2(arg3,arg4)."]).predicates;
-      const expected = [{head:[{ name: "rule1", arguments: ["arg1", "arg2"] }],
-                         tail:[{ name: "rule2", arguments: ["arg3", "arg4"] }]}];
+      const expected = [{head:[{ name: "rule1", arguments: 2 }],
+                         tail:[{ name: "rule2", arguments: 2 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one choice with two predicates with arguments (one separated with a semicolon)', function () {
       const result = getPredicates(["{rule1(arg1,arg2;arg3,arg4)} :- rule2(arg5,arg6)."]).predicates;
-      const expected = [{head:[{ name: "rule1", arguments: ["arg1", "arg2"] },
-                               { name: "rule1", arguments: ["arg3", "arg4"] }],
-                         tail:[{ name: "rule2", arguments: ["arg5", "arg6"] }]}];
+      const expected = [{head:[{ name: "rule1", arguments: 2 }],
+                         tail:[{ name: "rule2", arguments: 2 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one definition with two predicates without arguments', function () {
       const result = getPredicates(["rule2 :- rule1."]).predicates;
-      const expected = [{head:[{ name: "rule2", arguments: [] }],
-                         tail:[{ name: "rule1", arguments: [] }]}];
+      const expected = [{head:[{ name: "rule2", arguments: 0 }],
+                         tail:[{ name: "rule1", arguments: 0 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one definition with four predicates with arguments', function () {
       const result = getPredicates(["rule4(X,Y,Z) :- rule1(X), rule2(Y), rule3(Z)."]).predicates;
-      const expected = [{head:[{ name: "rule4", arguments: ["X", "Y", "Z"] }],
-                         tail:[{ name: "rule1", arguments: ["X"] },
-                               { name: "rule2", arguments: ["Y"] },
-                               { name: "rule3", arguments: ["Z"] }]}];
+      const expected = [{head:[{ name: "rule4", arguments: 3 }],
+                         tail:[{ name: "rule1", arguments: 1 },
+                               { name: "rule2", arguments: 1 },
+                               { name: "rule3", arguments: 1 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one constraint with one predicate without arguments', function () {
       const result = getPredicates([":- rule."]).predicates;
-      const expected = [{head: [], tail: [{ name: "rule", arguments: [] }]}];
+      const expected = [{head: [], tail: [{ name: "rule", arguments: 0 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one constraint with 3 predicates with arguments', function () {
       const result = getPredicates([":- rule1(arg1,arg2), rule2(X), rule3(Y), X!=Y."]).predicates;
       const expected = [{head:[],
-                         tail:[{ name: "rule1", arguments: ["arg1", "arg2"] },
-                               { name: "rule2", arguments: ["X"] },
-                               { name: "rule3", arguments: ["Y"] }]}];
+                         tail:[{ name: "rule1", arguments: 2 },
+                               { name: "rule2", arguments: 1 },
+                               { name: "rule3", arguments: 1 }]}];
       assert.deepEqual(result, expected);
     });
 
     it('one show statement with one predicate with 4 arguments', function () {
       const result = getPredicates(["#show rule/4."]).predicates;
-      const expected = [{head:[{ name: "rule", arguments: [] }], tail: []}];
+      const expected = [{head:[{ name: "rule", arguments: 4 }], tail: []}];
       assert.deepEqual(result, expected);
     });
+
+    it('one show statement with many predicates', function () {
+
+      const result = getPredicates(["#show a/0, b/1, cdef/150, cABC_100/5."]).predicates;
+      const expected = [{head: [{ name: "a", arguments: 0},
+                                { name: "b", arguments: 1},
+                                { name: "cdef", arguments: 150},
+                                { name: "cABC_100", arguments: 5}], tail:[]}];
+      assert.deepEqual(result, expected);
+    });
+
+    it('one definition with a not', function () {
+
+      const result = getPredicates(["a :- not b."]).predicates;
+      const expected = [{head: [{ name: "a", arguments: 0}], 
+                         tail:[{ name: "b", arguments: 0}]}];
+      assert.deepEqual(result, expected);
+    });
+
 
     it('ASP program test 1', function () {
       const result = getPredicates(["rule1.",
@@ -822,11 +858,11 @@ describe('Extension', function () {
         ":- rule4",
         "#show rule5/0."]).predicates;
 
-      const expected = [{head:[{ name: "rule1", arguments: [] }], tail:[]},
-                        {head:[{ name: "rule2", arguments: [] }], tail:[]},
-                        {head:[{ name: "rule3", arguments: [] }], tail:[{ name: "rule1", arguments: [] }]},
-                        {head:[], tail:[{ name: "rule4", arguments: [] }]},
-                        {head:[{ name: "rule5", arguments: [] }], tail:[]}];
+      const expected = [{head:[{ name: "rule1", arguments: 0 }], tail:[]},
+                        {head:[{ name: "rule2", arguments: 0 }], tail:[]},
+                        {head:[{ name: "rule3", arguments: 0 }], tail:[{ name: "rule1", arguments: 0 }]},
+                        {head:[], tail:[{ name: "rule4", arguments: 0 }]},
+                        {head:[{ name: "rule5", arguments: 0 }], tail:[]}];
       assert.deepEqual(result, expected);
     });
 
@@ -839,27 +875,22 @@ describe('Extension', function () {
         ":- subgrid(X,Y,Z,W), in(X,Y,N), in(Z,W,N), X!=Z, Y!=W.",
         "#show in/3."]).predicates;
 
-      const expected = [{head:[{ name: "n", arguments: ["1..9"] }],
+      const expected = [{head:[{ name: "n", arguments: 1 }],
                          tail:[]},
-                        {head:[{ name: "in", arguments: ["X", "Y", "N"] }, { name: "n", arguments: ["N"] }], 
-                         tail:[{ name: "n", arguments: ["Y"] }, { name: "n", arguments: ["X"] }]},
-                        {head:[{ name: "in", arguments: ["X", "Y", "N"] }, { name: "n", arguments: ["Y"] }], 
-                        tail:[{ name: "n", arguments: ["X"] }, { name: "n", arguments: ["N"] }]},
-                        {head:[{ name: "in", arguments: ["X", "Y", "N"] }, { name: "n", arguments: ["X"] }], 
-                        tail: [{ name: "n", arguments: ["Y"] }, { name: "n", arguments: ["N"] }]},
-                        {head:[{ name: "subgrid", arguments: ["X", "Y", "Z", "W"] }], 
-                         tail:[{ name: "n", arguments: ["X"] }, { name: "n", arguments: ["Y"] }, { name: "n", arguments: ["Z"] }, { name: "n", arguments: ["W"] }]},
+                        {head:[{ name: "in", arguments: 3 }, { name: "n", arguments: 1 }], 
+                         tail:[{ name: "n", arguments: 1 }, { name: "n", arguments: 1 }]},
+                        {head:[{ name: "in", arguments: 3 }, { name: "n", arguments: 1 }], 
+                        tail:[{ name: "n", arguments: 1 }, { name: "n", arguments: 1 }]},
+                        {head:[{ name: "in", arguments: 3 }, { name: "n", arguments: 1 }], 
+                        tail: [{ name: "n", arguments: 1 }, { name: "n", arguments: 1 }]},
+                        {head:[{ name: "subgrid", arguments: 4 }], 
+                         tail:[{ name: "n", arguments: 1 }, { name: "n", arguments: 1 }, { name: "n", arguments: 1 }, { name: "n", arguments: 1 }]},
                         {head:[], 
-                         tail:[{ name: "subgrid", arguments: ["X", "Y", "Z", "W"] }, { name: "in", arguments: ["X", "Y", "N"] }, { name: "in", arguments: ["Z", "W", "N"] }]},
-                        {head:[{ name: "in", arguments: [] }], 
+                         tail:[{ name: "subgrid", arguments: 4 }, { name: "in", arguments: 3 }, { name: "in", arguments: 3 }]},
+                        {head:[{ name: "in", arguments: 3 }], 
                          tail:[]}];
       assert.deepEqual(result, expected);
     });
-
-
-
-
-
   });
 
   describe('loadErrors', function () {
@@ -1260,14 +1291,55 @@ describe('Extension', function () {
       });
     });
 
-    describe('Dependencies Tests', function () {
-      it('test 40 - program without facts', function () {
+    describe('Dependency Tests', function () {
+      it('test 40 - choice without facts', function () {
 
         let file = readFileSync(PATH + '/loadErrors/test40_dependencies.lp').toLocaleString();
 
         const result = loadErrors(file);
-        assert.deepEqual(result, [[{ lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 33 }], 
-                                   ["Error, atoms n(N), n(Y) and n(Y) do not occur in any rule head"]]);
+        assert.deepEqual(result, [[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 44}], 
+                                   ["Error, predicates n/1 and a/1 are not defined yet."]]);
+      });
+
+      it('test 41 - many rules without facts', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test41_dependencies.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 7},
+                                   {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 10},
+                                   {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 13},
+                                   {lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 5},
+                                   {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 8},
+                                   {lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 11},
+                                   {lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 10}
+                                  ], 
+                                   ['Error, predicate c/0 is not defined yet.',
+                                   'Error, predicate c/1 is not defined yet.',
+                                   'Error, predicates g/0, h/0 and j/0 are not defined yet.',
+                                   'Error, predicate b/0 is not defined yet.',
+                                   'Error, predicate b/1 is not defined yet.',
+                                   'Error, predicates d/0, e/0 and f/0 are not defined yet.',
+                                   'Error, predicate a/1 is not defined yet.']]);
+      });
+      
+      it('test 42 - predicate defined but in the wrong order', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test42_dependencies.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[{lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 5},
+                                   {lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 10}], 
+                                   ['Error, all facts must be before choices.',
+                                    'Error, predicate a/1 is not defined yet.']]);
+      });
+
+      it('test 43 - predicate defined but in the right order', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/test43_dependencies.lp').toLocaleString();
+
+        const result = loadErrors(file);
+        assert.deepEqual(result, [[], []]);
       });
     });
   });
