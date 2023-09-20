@@ -63,8 +63,17 @@ function formatText(text){
 						else {
 							comment = comment.concat(text[j]);
 						}
-						if(end)
-							i = j + 1;
+						if(end){
+							if(text[j+1].trim() == "")
+								i = j + 1;
+							else
+								i = j;
+						}
+						if(!text[j].includes('*%') && j == text.length - 1){
+							end = true;
+							i = j;
+							formattedText.push(comment.trim());
+						}
 					}
 				}
 			}

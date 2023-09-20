@@ -5,6 +5,7 @@ const CHOICE = 3;
 const DEFINITION = 4;
 const CONSTRAINT = 5;
 const SHOW_STATEMEMENT = 6;
+const CONSTANT = 7;
 const INVALID_RULE = -1;
 
 /**
@@ -29,8 +30,12 @@ function getRuleType(rule) {
 		return COMMENT;
 	else if (rule.includes('%'))
 		rule = rule.split('%')[0].trim();
-	if (rule.startsWith("#show"))
+	else if(!rule.match(/^[a-zA-Z0-9_#+-/*:{}(),.%<>=;!]+$/))
+		return INVALID_RULE;
+	if (rule.startsWith("#show") && rule[rule.length-2].match(/[0-9]/))
 		return SHOW_STATEMEMENT;
+	if(rule.startsWith("#const") && rule[rule.length-2].match(/[0-9]/))
+		return CONSTANT;
 	else if (!rule.includes(':-') && !rule.includes('{') && !rule.includes('}') && rule[0].match(/[a-z]/)) {
 		let a = 0;
 		for (let i = 0; i < rule.length; i++) {
@@ -60,7 +65,7 @@ function getRuleType(rule) {
 			const char3 = rule[rule.indexOf('{') + 1];
 			const char4 = rule[rule.indexOf('}') - 1];
 
-			if (/[a-zA-Z]/.test(char3) && /^[a-zA-Z)]$/.test(char4))
+			if (/[a-zA-Z0-9]/.test(char3) && /^[a-zA-Z)0-9]$/.test(char4))
 				return CHOICE;
 			else
 				return INVALID_RULE;
@@ -77,4 +82,4 @@ function getRuleType(rule) {
 		return INVALID_RULE;
 }
 
-module.exports = { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE };
+module.exports = { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, CONSTANT, INVALID_RULE };

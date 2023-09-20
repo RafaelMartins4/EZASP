@@ -1,4 +1,4 @@
-const { COMMENT, EMPTY, SHOW_STATEMEMENT, getRuleType } = require('../parser/getRuleType');
+const { COMMENT, EMPTY, SHOW_STATEMEMENT, getRuleType, INVALID_RULE } = require('../parser/getRuleType');
 
 function extractPredicatesAux(rule, ruleType) {
 
@@ -12,9 +12,13 @@ function extractPredicatesAux(rule, ruleType) {
   if (!matches)
     matches = [];
 
-  for (const match of matches)
-    if (rule[rule.indexOf(match) - 1] == "#")
+  for(let i = 0; i<matches.length; i++){
+    const match = matches[i];
+    if(rule[rule.indexOf(match) - 1] == "#"){
       matches.splice(matches.indexOf(match), 1);
+      i--;
+    }
+  }
 
 
   if (isShowStatement) {
@@ -130,8 +134,13 @@ function getPredicates(formattedText) {
   const predicates = [];
 
   for (let i = 0; i < nonReductantRules.length; i++) {
-    const predicate = extractPredicates(formattedText[nonReductantRules[i][1]], nonReductantRules[i][0]);
-    predicates.push(predicate);
+    if(nonReductantRules[i][0] == INVALID_RULE) {
+      predicates.push({head:[], tail:[]});
+    }
+    else{
+      const predicate = extractPredicates(formattedText[nonReductantRules[i][1]], nonReductantRules[i][0]);
+      predicates.push(predicate);
+    }
   }
 
   return { predicates: predicates, nonReductantRules: nonReductantRules };
