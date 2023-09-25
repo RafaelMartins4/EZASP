@@ -30,7 +30,7 @@ function arrayContainsObject(array, object) {
 /**
  * @param {string} textRaw
  */
-function loadErrors(textRaw) {
+function loadErrors(textRaw, extraTextRaw) {
 
 	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
@@ -54,6 +54,14 @@ function loadErrors(textRaw) {
 	const result2 = getPredicates(formattedText);
 	const predicates = result2.predicates;	
 	const nonReductantRules = result2.nonReductantRules;
+
+	const extraText = extraTextRaw.split(SPLIT_CODE);
+	const extraResult1 = formatText(extraText);
+		const extraFormattedText = extraResult1.formattedText;
+
+	const extraResult2 = getPredicates(extraFormattedText);
+	const extraPredicates = extraResult2.predicates;	
+	const extraNonReductantRules = extraResult2.nonReductantRules;
 
 	/*
 		Underlines and provides error message to every rule in the ASP that violates the EZASP protocol
@@ -230,6 +238,21 @@ function loadErrors(textRaw) {
 	}
 
 	const definedPredicates = [];
+	
+	for(let i = 0; i<extraNonReductantRules.length; i++){
+		if(extraNonReductantRules[i][0] != INVALID_RULE){
+			for(const predicate of extraPredicates[i].head){
+				const tmp = extraFormattedText[extraNonReductantRules[i][1]].split(':-')[0];
+				if(extraNonReductantRules[i][0] != SHOW_STATEMEMENT){
+					if(!tmp.includes(':'))
+						definedPredicates.push(predicate)
+					else if(!tmp.split(':')[1].includes(predicate.name))
+						definedPredicates.push(predicate)
+				}
+			}
+		}
+	}
+
 	const undefinedPredicates = new Map();
 	for(let i = 0; i<nonReductantRules.length; i++){
 

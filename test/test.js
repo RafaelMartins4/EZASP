@@ -994,7 +994,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test1_empty.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1002,7 +1002,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test2_ezasp.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1010,7 +1010,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test3_facts.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be at the beginning, or between constants and choices."]]);
       });
 
@@ -1018,7 +1018,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test4_facts.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be at the beginning, or between constants and choices."]]);
       });
 
@@ -1026,7 +1026,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test5_facts.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be at the beginning, or between constants and choices."]]);
       });
 
@@ -1034,7 +1034,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test6_facts.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be at the beginning, or between constants and choices."]]);
       });
 
@@ -1042,7 +1042,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test7_facts.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 11 }], ["Error, all facts must be at the beginning, or between constants and choices."]]);
       });
 
@@ -1050,7 +1050,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test8_choices.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 8 }], ["Error, all facts must be at the beginning, or between constants and choices."]]);
       });
 
@@ -1058,7 +1058,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test9_choices.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1066,7 +1066,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test10_choices.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be at the beginning, or between facts and definitions."]]);
       });
 
@@ -1074,7 +1074,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test11_choices.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be at the beginning, or between facts and definitions."]]);
       });
 
@@ -1082,7 +1082,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test12_choices.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 15 }], ["Error, all choices must be at the beginning, or between facts and definitions."]]);
       });
 
@@ -1090,7 +1090,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test13_rules.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 8},
           {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33},
           {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33},
@@ -1107,7 +1107,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test14_rules.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
         { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
         { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
@@ -1123,7 +1123,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test15_rules.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 25 }], ['Error, predicate dummy_fact/0 is not defined yet.']]);
       });
 
@@ -1131,7 +1131,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test16_rules.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 25 }], ["Error, all definitions must be between choices and constraints. Error, predicate dummy_fact/0 is not defined yet."]]);
       });
 
@@ -1139,7 +1139,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test17_rules.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 25 }], ["Error, all definitions must be between choices and constraints. Error, predicate dummy_fact/0 is not defined yet."]]);
       });
 
@@ -1147,7 +1147,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test18_constraints.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 8},
           {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33},
           {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33},
@@ -1166,7 +1166,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test19_constraints.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
         { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
         { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
@@ -1183,7 +1183,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test20_constraints.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 },
         { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 14 }],
         ["Error, all definitions must be between choices and constraints.",
@@ -1194,7 +1194,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test21_constraints.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 14 }], ['Error, predicate wrong_rule/0 is not defined yet.']]);
       });
 
@@ -1202,7 +1202,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test22_constraints.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 14 }], ["Error, all constraints must be between definitions and show statements. Error, predicate wrong_rule/0 is not defined yet."]]);
       });
 
@@ -1210,7 +1210,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test23_views.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 3, lineEnd: 3, indexStart: 0, indexEnd: 8},
           {lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33},
           {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33},
@@ -1231,7 +1231,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test24_views.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 },
         { lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 33 },
         { lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 33 },
@@ -1251,7 +1251,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test25_views.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 76 },
         { lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 },
         {lineStart: 12, lineEnd: 12, indexStart: 0, indexEnd: 19}],
@@ -1264,7 +1264,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test26_views.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 54 },
         { lineStart: 15, lineEnd: 15, indexStart: 0, indexEnd: 19 }],
         ["Error, all constraints must be between definitions and show statements.",
@@ -1275,7 +1275,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test27_views.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 19 }], ['Error, predicate dummy_fact/0 is not defined yet.']]);
       });
 
@@ -1283,7 +1283,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test28_multiple.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1291,7 +1291,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test29_multiple.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 2 },
         { lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 2 }],
         ["Error, all facts must be at the beginning, or between constants and choices.",
@@ -1302,7 +1302,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test30_multiple.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 4 },
         { lineStart: 11, lineEnd: 11, indexStart: 0, indexEnd: 4 }],
         ["Error, all choices must be at the beginning, or between facts and definitions.",
@@ -1313,7 +1313,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test31_multiple.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 7 },
         { lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 7 }],
         ["Error, all definitions must be between choices and constraints.",
@@ -1324,7 +1324,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test32_multiple.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 2 },
         { lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 2 },
         { lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 4 },
@@ -1343,7 +1343,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test33_random.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 2 },
         { lineStart: 21, lineEnd: 21, indexStart: 0, indexEnd: 2 },
         { lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 2 },
@@ -1376,7 +1376,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test34_program.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 14 },
         { lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 28 },
         { lineStart: 23, lineEnd: 23, indexStart: 0, indexEnd: 43 },
@@ -1391,7 +1391,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test35_program.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1399,7 +1399,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test36_program.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 31, lineEnd: 31, indexStart: 0, indexEnd: 39 },
         { lineStart: 32, lineEnd: 32, indexStart: 0, indexEnd: 42 },
         { lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 27 },
@@ -1420,7 +1420,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test37_program.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1428,7 +1428,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test38_program.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1436,7 +1436,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test39_format.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 2 },
         { lineStart: 9, lineEnd: 9, indexStart: 2, indexEnd: 4 },
         { lineStart: 9, lineEnd: 9, indexStart: 4, indexEnd: 6 },
@@ -1457,7 +1457,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test40_constants.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[],[]]);
       });
 
@@ -1465,7 +1465,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test41_constants.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 13},
           {lineStart: 5, lineEnd: 5, indexStart: 0, indexEnd: 13}],
           ['Error, all constants must be at the beginning.',
@@ -1476,7 +1476,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test42_constants.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 13},
           {lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 13}],
           ['Error, all constants must be at the beginning.',
@@ -1487,7 +1487,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test43_constants.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 13},
           {lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 13}],
           ['Error, all constants must be at the beginning.',
@@ -1498,7 +1498,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test44_constants.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 19, lineEnd: 19, indexStart: 0, indexEnd: 13},
           {lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 13}],
           ['Error, all constants must be at the beginning.',
@@ -1509,7 +1509,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Order_Tests/test45_constants.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 21, lineEnd: 21, indexStart: 0, indexEnd: 13},
           {lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 13}],
           ['Error, all constants must be at the beginning.',
@@ -1522,7 +1522,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test1_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 44 }],
         ["Error, predicates n/1 and a/1 are not defined yet."]]);
       });
@@ -1531,7 +1531,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test2_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 7 },
         { lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 10 },
         { lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 13 },
@@ -1553,7 +1553,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test3_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{ lineStart: 2, lineEnd: 2, indexStart: 0, indexEnd: 5 },
         { lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 10 }],
         [ "Error, all facts must be at the beginning, or between constants and choices.",
@@ -1564,7 +1564,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test4_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[], []]);
       });
 
@@ -1572,7 +1572,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test5_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 0, lineEnd: 0, indexStart: 0, indexEnd: 9}], ["Invalid Rule."]]);
       });
 
@@ -1580,7 +1580,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test6_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 11},
           {lineStart: 16, lineEnd: 16, indexStart: 0, indexEnd: 13},
           {lineStart: 18, lineEnd: 18, indexStart: 0, indexEnd: 11},
@@ -1597,7 +1597,7 @@ describe('Extension', function () {
 
         let file = readFileSync(PATH + '/loadErrors/Dependency_Tests/test7_dependencies.lp').toLocaleString();
 
-        const result = loadErrors(file);
+        const result = loadErrors(file,"");
         assert.deepEqual(result, [[{lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 38},
           {lineStart: 8, lineEnd: 8, indexStart: 0, indexEnd: 36},
           {lineStart: 9, lineEnd: 9, indexStart: 0, indexEnd: 37},
@@ -1617,6 +1617,50 @@ describe('Extension', function () {
           'Error, predicates a/0, b/0 and c/0 are not defined yet.',
           'Error, predicates a/0, b/0 and c/0 are not defined yet.']]);
       });
+    });
+  });
+
+  describe('multipleFiles', function () {
+    it('test 1 - multiple file program with no errors', function () {
+      let file = readFileSync(PATH + '/multipleFiles/test1/root1.lp').toLocaleString();
+
+      const result = loadErrors(file,"in(1,4,9).in(1,5,2).in(2,3,9).in(2,6,1).");
+      assert.deepEqual(result, [[],[]]);
+    });
+
+    it('test 2 - multiple file program with one error', function () {
+      let file = readFileSync(PATH + '/multipleFiles/test2/root2.lp').toLocaleString();
+
+      const result = loadErrors(file,"in(1,4,9).in(1,5,2).in(2,3,9).in(2,6,1).");
+      assert.deepEqual(result, 
+        [[{lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 76}]
+        ,['Error, predicate n/1 is not defined yet.']]);
+    });
+
+    it('test 3 - multiple file program with a few error', function () {
+      let file = readFileSync(PATH + '/multipleFiles/test3/root3.lp').toLocaleString();
+
+      const result = loadErrors(file,"");
+      assert.deepEqual(result, 
+        [[{lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 76},
+          {lineStart: 20, lineEnd: 20, indexStart: 0, indexEnd: 54},
+          {lineStart: 22, lineEnd: 22, indexStart: 0, indexEnd: 11}]
+        ,['Error, predicate n/1 is not defined yet.',
+        'Error, predicate in/3 is not defined yet.',
+        'Error, predicate in/3 is not defined yet.']]);
+    });
+
+    it('test 4 - no config file', function () {
+      let file = readFileSync(PATH + '/multipleFiles/test4/root4.lp').toLocaleString();
+
+      const result = loadErrors(file,"");
+      assert.deepEqual(result, 
+        [[{lineStart: 14, lineEnd: 14, indexStart: 0, indexEnd: 76},
+          {lineStart: 17, lineEnd: 17, indexStart: 0, indexEnd: 54},
+          {lineStart: 19, lineEnd: 19, indexStart: 0, indexEnd: 11}]
+        ,['Error, predicate n/1 is not defined yet.',
+        'Error, predicate in/3 is not defined yet.',
+        'Error, predicate in/3 is not defined yet.']]);
     });
   });
 });

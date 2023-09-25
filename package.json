@@ -15,12 +15,6 @@
   ],
   "main": "./src/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "ezasp.helloWorld",
-        "title": "Hello World"
-      }
-    ],
     "languages": [
       {
         "id": "asp",
