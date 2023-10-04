@@ -28,7 +28,7 @@ function getRanges(text, extraText){
 		results.push(convertRange(range));
 	})
 
-	return [results,data[1]];
+	return [results,data];
 }	
 
 function getExtraFiles(activeEditor){
@@ -43,14 +43,23 @@ function getExtraFiles(activeEditor){
 	if(existsSync(dir+'/config.json')){
 		const fileData = readFileSync(dir+'/config.json', 'utf-8');
         const json = JSON.parse(fileData);
-		files = json.additionalFiles;
-	}
+		const addFiles = json.additionalFiles;
+		const split = fileName.split('\\');
 
+		if(addFiles.includes(split[split.length])){
+			for (const item of addFiles)
+				if (item !== split[split.length]) 
+					files.push(item);
+		}
+		else
+			files = addFiles;
+	}
+  
 	for(const file of files){
 		if(existsSync(dir+'/'+file))
 			text = text + readFileSync(dir+'/'+file, 'utf-8');
 		else
-			vscode.window.showErrorMessage('File ' +file+ ' does not exist in this folder, check config.json.');
+			vscode.window.showErrorMessage('File ' +file+ ' does not exist in this folder, check config.json file.');
 	}
 
 	return text;
@@ -92,13 +101,13 @@ function activate(context) {
 				editor.setDecorations(underlineRed, results[0]);
 				console.log(results);
 			}
-		});
+		});	
 		
 		let disposable = vscode.languages.registerHoverProvider('*', {
 			provideHover(document, position) {
-				for (let i = 0; i<results[1].length; i++) {	
+				for (let i = 0; i<results[1][1].length; i++) {	
 					if (results[0][i].contains(position)) {
-						const hoverMessage = new vscode.Hover(results[1][i]);
+						const hoverMessage = new vscode.Hover(results[1][1][i]);
 						return hoverMessage;
 					}
 				}
@@ -106,6 +115,24 @@ function activate(context) {
 		});
 
 		context.subscriptions.push(disposable);
+		
+		const keys = [...results[1][3].keys()];
+		const ranges = [];
+
+		for(const range of keys)
+			ranges.push(convertRange(range))
+		
+		/*
+		// Create a decoration type for the clickable range
+		const decorationType = vscode.window.createTextEditorDecorationType({
+			cursor: 'pointer',
+		});
+
+		// Apply the decoration to the range
+		vscode.window.activeTextEditor.setDecorations(decorationType, ranges);
+
+		context.subscriptions.push(disposable);
+		*/
 	}
 }
 

@@ -4,7 +4,7 @@
     "description": "Documentation: https://github.com/potassco/guide/releases/download/v2.2.0/guide.pdf",
     "author": "John Doe",
     "additionalFiles": [
-        "facts1.lp","root1.lp"
+        "facts8_1.lp","facts8_2.lp","facts8_3.lp","root8.lp"
     ],
     "args": {
         "verboseMode": 1,

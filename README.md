@@ -1,6 +1,8 @@
-# ezasp README
+# EZASP - Making Answer Set Programming Easier
 
-This is the README for your extension "ezasp". After writing up a brief description, we recommend including the following sections.
+This Visual Studio Code extension is made specifically for users who are learning Answer Set Programming
+
+-- STILL IN DEVELOPMENT -- this readme from now on is a template, to be changed --
 
 ## Features
 

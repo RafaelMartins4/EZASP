@@ -26,19 +26,23 @@
           "Potassco",
           "Logic Program",
           "Declarative Programming"
-        ],
-        "extensions": [
-          ".lp",
-          ".ilp",
-          ".cl",
-          ".clp",
-          ".iclp",
-          ".Clp",
-          ".iClp",
-          ".blp",
-          ".iblp"
         ]
       }
+    ],
+    "commands":[
+      {
+        "command": "extension.test",
+        "title": "test"
+      }
+    ],
+    "keybindings":[
+      {
+        "command": "extension.test",
+        "key": "\\"
+      }
+    ],
+    "activationEvents": [
+      "onCommand:extension.clickableRange"
     ]
   },
   "scripts": {
