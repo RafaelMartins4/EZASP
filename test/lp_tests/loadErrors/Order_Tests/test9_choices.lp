@@ -1,4 +1,4 @@
-% positions
+%positions
 n(1..9).
 
 {wrong_choice}.

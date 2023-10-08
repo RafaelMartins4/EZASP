@@ -27,6 +27,16 @@ function arrayContainsObject(array, object) {
 	return false;
 }
 
+function arrayOfPredicatesContaintsPredicateInLine(array, line) {
+	for (const element of array) {
+		if (element.lineStart == line) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 function getPredicatesRanges(predicate, line, start) {
 	const results = [];
 
@@ -86,14 +96,14 @@ function loadErrors(textRaw, extraTextRaw) {
 		Underlines and provides error message to every rule in the ASP that violates the EZASP protocol
 	*/
 	let errorRanges = [];
-	let hoverMessages = [];
+	let errorMessages = [];
 
 	//Shows error if rules are invalid
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == INVALID_RULE) {
 			const range = lines[nonReductantRules[i][1]];
 			errorRanges.push(range);
-			hoverMessages.push("Invalid Rule.")
+			errorMessages.push("Invalid Rule.")
 		}
 	}
 
@@ -112,7 +122,7 @@ function loadErrors(textRaw, extraTextRaw) {
 		if (nonReductantRules[i][0] == CONSTANT && !lastLineisConstant) {
 			const range = lines[nonReductantRules[i][1]];
 			errorRanges.push(range);
-			hoverMessages.push("Error, all constants must be at the beginning.")
+			errorMessages.push("Error, all constants must be at the beginning.")
 		}
 	}
 
@@ -136,9 +146,9 @@ function loadErrors(textRaw, extraTextRaw) {
 					isConstant = true;
 			}
 			if (isConstant)
-				hoverMessages.push("Error, this block of facts is in between a block of other rules.")
+				errorMessages.push("Error, this block of facts is in between a block of other rules.")
 			else
-				hoverMessages.push("Error, all facts must be at the beginning, or between constants and choices.")
+				errorMessages.push("Error, all facts must be at the beginning, or between constants and choices.")
 		}
 	}
 
@@ -163,9 +173,9 @@ function loadErrors(textRaw, extraTextRaw) {
 					isFact = true;
 			}
 			if (isFact)
-				hoverMessages.push("Error, this block of choices is in between a block of other rules.")
+				errorMessages.push("Error, this block of choices is in between a block of other rules.")
 			else
-				hoverMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
+				errorMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
 		}
 	}
 
@@ -191,9 +201,9 @@ function loadErrors(textRaw, extraTextRaw) {
 					isChoice = true;
 			}
 			if (isChoice)
-				hoverMessages.push("Error, this block of definitions is in between a block of other rules.")
+				errorMessages.push("Error, this block of definitions is in between a block of other rules.")
 			else
-				hoverMessages.push("Error, all definitions must be between choices and constraints.")
+				errorMessages.push("Error, all definitions must be between choices and constraints.")
 		}
 	}
 
@@ -220,9 +230,9 @@ function loadErrors(textRaw, extraTextRaw) {
 					isDefinition = true;
 			}
 			if (isDefinition)
-				hoverMessages.push("Error, this block of constraints is in between a block of other rules.")
+				errorMessages.push("Error, this block of constraints is in between a block of other rules.")
 			else
-				hoverMessages.push("Error, all constraints must be between definitions and show statements.")
+				errorMessages.push("Error, all constraints must be between definitions and show statements.")
 		}
 	}
 
@@ -250,9 +260,9 @@ function loadErrors(textRaw, extraTextRaw) {
 					isConstraint = true;
 			}
 			if (isConstraint)
-				hoverMessages.push("Error, this block of show statements is in between a block of other rules.")
+				errorMessages.push("Error, this block of show statements is in between a block of other rules.")
 			else
-				hoverMessages.push("Error, all show statements must be after constraints.")
+				errorMessages.push("Error, all show statements must be after constraints.")
 		}
 	}
 
@@ -272,30 +282,79 @@ function loadErrors(textRaw, extraTextRaw) {
 		}
 	}
 
-
 	const undefinedPredicates = new Map();
-	const definitionOrigins = new Map();
+	const definitionMessages = new Map();
+
+	const warningRanges = [];
 
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == FACT && !definitionOrigins.has(JSON.stringify(predicates[i].head[0])))
-			definitionOrigins.set(JSON.stringify(predicates[i].head[0]), lines[nonReductantRules[i][1]])
-
-		if (nonReductantRules[i][0] == CHOICE && !definitionOrigins.has(JSON.stringify(predicates[i].head[0])))
-			definitionOrigins.set(JSON.stringify(predicates[i].head[0]), lines[nonReductantRules[i][1]])
-
+		let hasDefinedMessage = false;
+		if ((nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE) && !definitionMessages.has(JSON.stringify(predicates[i].head[0]))){
+			if(nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1]-1]) == COMMENT)
+				definitionMessages.set(JSON.stringify(predicates[i].head[0]), formattedText[nonReductantRules[i][1]-1].replace('%','').replace('%*','').replace('*%','')+" (line "+(lines[nonReductantRules[i][1]].lineStart+1)+").")
+			else {
+				definitionMessages.set(JSON.stringify(predicates[i].head[0]), "No comment where this predicate is defined (line "+(lines[nonReductantRules[i][1]].lineStart+1)+")." );
+				warningRanges.push(lines[nonReductantRules[i][1]])
+			}
+			hasDefinedMessage = true;
+		}
+		else if (nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE){
+			if(nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1]-1]) == COMMENT){
+				const message = definitionMessages.get(JSON.stringify(predicates[i].head[0]));
+				definitionMessages.set(JSON.stringify(predicates[i].head[0]), message + " | " + formattedText[nonReductantRules[i][1]-1].replace('%','').replace('%*','').replace('*%','')+" (line "+(lines[nonReductantRules[i][1]].lineStart+1)+").")
+			}			
+			else {
+				const message = definitionMessages.get(JSON.stringify(predicates[i].head[0]));
+				definitionMessages.set(JSON.stringify(predicates[i].head[0]), message + " | " + "No comment where this predicate is defined (line "+(lines[nonReductantRules[i][1]].lineStart+1)+")." )
+				warningRanges.push(lines[nonReductantRules[i][1]])
+			}
+			hasDefinedMessage = true;
+		}
 		if (nonReductantRules[i][0] != INVALID_RULE) {
 			for (const predicate of predicates[i].head) {
 				const tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
 				if (nonReductantRules[i][0] != SHOW_STATEMEMENT) {
 					if (!tmp.includes(':')) {
 						definedPredicates.push(predicate)
-						if (!definitionOrigins.has(JSON.stringify(predicates[i].head[0])))
-							definitionOrigins.set(JSON.stringify(predicates[i].head[0]), lines[nonReductantRules[i][1]])
+						if (!definitionMessages.has(JSON.stringify(predicates[i].head[0])))
+							if(nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1]-1]) == COMMENT)
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), formattedText[nonReductantRules[i][1]-1].replace('%','').replace('%*','').replace('*%','')+" (line "+(lines[nonReductantRules[i][1]].lineStart+1)+").")
+							else{
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), "No comment where this predicate is defined (line "+(lines[nonReductantRules[i][1]].lineStart+1)+")." )
+								warningRanges.push(lines[nonReductantRules[i][1]])
+							}
+						else if (!hasDefinedMessage){
+							if(nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1]-1]) == COMMENT){
+								const message = definitionMessages.get(JSON.stringify(predicates[i].head[0]));
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), message + " | " + formattedText[nonReductantRules[i][1]-1].replace('%','').replace('%*','').replace('*%','')+" (line "+(lines[nonReductantRules[i][1]].lineStart+1)+").")
+							}	
+							else {
+								const message = definitionMessages.get(JSON.stringify(predicates[i].head[0]));
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), message + " | " + "No comment where this predicate is defined (line "+(lines[nonReductantRules[i][1]].lineStart+1)+")." )
+								warningRanges.push(lines[nonReductantRules[i][1]])
+							}
+						}
 					}
 					else if (!tmp.split(':')[1].includes(predicate.name)) {
 						definedPredicates.push(predicate)
-						if (!definitionOrigins.has(JSON.stringify(predicates[i].head[0])))
-							definitionOrigins.set(JSON.stringify(predicates[i].head[0]), lines[nonReductantRules[i][1]])
+						if (!definitionMessages.has(JSON.stringify(predicates[i].head[0])))
+							if(nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1]-1]) == COMMENT)
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), formattedText[nonReductantRules[i][1]-1].replace('%','').replace('%*','').replace('*%',''))
+							else {
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), "No comment where this predicate is defined (line "+(lines[nonReductantRules[i][1]].lineStart+1)+")." )	
+								warningRanges.push(lines[nonReductantRules[i][1]])
+							}
+						else if(!hasDefinedMessage){
+							if(nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1]-1]) == COMMENT){
+								const message = definitionMessages.get(JSON.stringify(predicates[i].head[0]));
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), message + " | " + formattedText[nonReductantRules[i][1]-1].replace('%','').replace('%*','').replace('*%','')+" (line "+(lines[nonReductantRules[i][1]].lineStart+1)+").")
+							}	
+							else {
+								const message = definitionMessages.get(JSON.stringify(predicates[i].head[0]));
+								definitionMessages.set(JSON.stringify(predicates[i].head[0]), message + " | " + "No comment where this predicate is defined (line "+(lines[nonReductantRules[i][1]].lineStart+1)+")." )
+								warningRanges.push(lines[nonReductantRules[i][1]])
+							}
+						}
 					}
 					else if (!arrayContainsObject(definedPredicates, predicate)) {
 						if (undefinedPredicates.has(lines[nonReductantRules[i][1]])) {
@@ -334,7 +393,7 @@ function loadErrors(textRaw, extraTextRaw) {
 		const predicates = undefinedPredicates.get(key);
 
 		if (predicates.length == 1)
-			hoverMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
+			errorMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
 
 		else {
 			let names = "";
@@ -347,7 +406,7 @@ function loadErrors(textRaw, extraTextRaw) {
 				else
 					names = names + ", " + predicates[j].name + "/" + predicates[j].arguments;
 
-			hoverMessages.push("Error, predicates" + names + " are not defined yet.")
+			errorMessages.push("Error, predicates" + names + " are not defined yet.")
 		}
 	}
 
@@ -357,9 +416,9 @@ function loadErrors(textRaw, extraTextRaw) {
 			seen.add(errorRanges[i]);
 		else {
 			const index = errorRanges.indexOf(errorRanges[i]);
-			hoverMessages[index] = hoverMessages[index] + " " + hoverMessages[i];
+			errorMessages[index] = errorMessages[index] + " " + errorMessages[i];
 			errorRanges.splice(i, 1);
-			hoverMessages.splice(i, 1);
+			errorMessages.splice(i, 1);
 			i--;
 		}
 	}
@@ -368,45 +427,49 @@ function loadErrors(textRaw, extraTextRaw) {
 
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		for (const predicate of predicates[i].head) {
-			if (definitionOrigins.has(JSON.stringify(predicate))) {
+			if (definitionMessages.has(JSON.stringify(predicate))) {
 				const a = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart);
 				for(const b of a)
 					if (linesWithPredicates.has(b)) 
-						linesWithPredicates.get(b).push(predicate)
+						linesWithPredicates.get(b).push(JSON.stringify(predicate))
 					else 
-						linesWithPredicates.set(b, predicate)
+						linesWithPredicates.set(b, JSON.stringify(predicate))
 			}
 		}
 
 		for (const predicate of predicates[i].tail) {
-			if (definitionOrigins.has(JSON.stringify(predicate))) {
+			if (definitionMessages.has(JSON.stringify(predicate))) {
 				const a = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart)
 				for(const b of a)
 					if (linesWithPredicates.has(JSON.stringify(predicate)))
-						linesWithPredicates.get(b).push(predicate)
+						linesWithPredicates.get(b).push(JSON.stringify(predicate))
 					else 
-						linesWithPredicates.set(b, predicate)
+						linesWithPredicates.set(b, JSON.stringify(predicate))
 			}
 		}
 	}
 
-	const warningRanges = [];
+	const predicateRanges = [];
+	const predicateMessages = [];
 
-	for (const [key, value] of definitionOrigins) {
-		let n;
-		for (let i = 0; i < lines.length; i++) {
-			if (value == lines[i])
-				n = i;
+	const keys = [...linesWithPredicates.keys()];
+
+	
+
+	for(const key of keys){
+		if(!arrayOfPredicatesContaintsPredicateInLine(errorRanges,key.lineStart) && !arrayOfPredicatesContaintsPredicateInLine(warningRanges,key.lineStart)){
+			predicateRanges.push(key);
+			predicateMessages.push(definitionMessages.get(linesWithPredicates.get(key)));
 		}
-
-		if (n == 0)
-			warningRanges.push(value);
-
-		else if (getRuleType(formattedText[n - 1]) != COMMENT)
-			warningRanges.push(value);
 	}
 
-	return [errorRanges, hoverMessages, definitionOrigins, linesWithPredicates, warningRanges];
+	const warningMessages = [];
+
+	for(const range of warningRanges){
+		warningMessages.push("Warning. This line is defining a predicate without proper commenting. (line "+range.lineStart+").");
+	}
+	
+	return [errorRanges, errorMessages, predicateRanges, predicateMessages, warningRanges, warningMessages];
 }
 
 module.exports = { loadErrors }

@@ -3,7 +3,7 @@
   "displayName": "EZASP",
   "description": "Making Learning Answer Set Programming Easier",
   "version": "0.0.1",
-  "publisher": "rmrhenriques",
+  "publisher": "RamiroHenriques",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -13,6 +13,10 @@
   "activationEvents": [
     "onLanguage:asp"
   ],
+  "repository": {
+		"type": "git",
+		"url": "https://github.com/rmr-henriques/ezasp"
+	},
   "main": "./src/extension.js",
   "contributes": {
     "languages": [
@@ -28,21 +32,6 @@
           "Declarative Programming"
         ]
       }
-    ],
-    "commands":[
-      {
-        "command": "extension.test",
-        "title": "test"
-      }
-    ],
-    "keybindings":[
-      {
-        "command": "extension.test",
-        "key": "\\"
-      }
-    ],
-    "activationEvents": [
-      "onCommand:extension.clickableRange"
     ]
   },
   "scripts": {

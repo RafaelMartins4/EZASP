@@ -22,13 +22,21 @@ function convertRange(range){
 function getRanges(text, extraText){
 	const data = loadErrors(text, extraText);
 
-	const results = [];
+	const errorRanges = [];
+	const predicateRanges = [];
+	const warningRanges = [];
 
 	data[0].forEach(range => {
-		results.push(convertRange(range));
+		errorRanges.push(convertRange(range));
 	})
 
-	return [results,data];
+	for(const range of data[2])
+		predicateRanges.push(convertRange(range));
+
+	for(const range of data[4])
+		warningRanges.push(convertRange(range));
+
+	return [data,errorRanges,predicateRanges,warningRanges];
 }	
 
 function getExtraFiles(activeEditor){
@@ -65,30 +73,81 @@ function getExtraFiles(activeEditor){
 	return text;
 }
 
+function loadThings(activeEditor){
+	const underlineRed = vscode.window.createTextEditorDecorationType({
+		textDecoration: 'underline wavy red'
+	});
+
+	const underlineYellow = vscode.window.createTextEditorDecorationType({
+		textDecoration: 'underline wavy yellow'
+	});
+
+	let results = getRanges(activeEditor.document.getText(), getExtraFiles(activeEditor));
+		activeEditor.setDecorations(underlineRed, results[1]);
+		activeEditor.setDecorations(underlineYellow, results[3]);
+
+		const errorObjects = results[0][0];
+		const predicateObjects = results[0][2];
+		const warningObjects = results[0][4];
+
+		const errorRanges = results[1];
+		const predicateRanges = results[2];
+		const warningRanges = results[3];
+		
+		const errorMessages = results[0][1];
+		const predicateMessages = results[0][3];
+		const warningMessages = results[0][5];
+ 		
+
+		let disposable = vscode.languages.registerHoverProvider('*', {
+			provideHover(document, position) {
+				for (let i = 0; i<errorObjects.length; i++) {	
+					if (errorRanges[i].contains(position)) {
+						const hoverMessage = new vscode.Hover(errorMessages[i]);
+						return hoverMessage;
+					}
+				}
+
+				for (let i = 0; i<predicateObjects.length; i++) {	
+					if (predicateRanges[i].contains(position)) {
+						const hoverMessage = new vscode.Hover(predicateMessages[i]);
+						return hoverMessage;
+					}
+				}
+
+				for (let i = 0; i<warningObjects.length; i++) {	
+					if (warningRanges[i].contains(position)) {
+						const hoverMessage = new vscode.Hover(warningMessages[i]);
+						return hoverMessage;
+					}
+				}
+			}
+		});
+
+	return disposable;
+}
+
+
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	const underlineRed = vscode.window.createTextEditorDecorationType({
-		textDecoration: 'underline wavy red'
-	});
+
 	
 	//Loads the underlines in the editor, and reloads on every change on the document
 	let activeEditor = vscode.window.activeTextEditor;
 
 	const fileName = activeEditor.document.fileName;
-	console.log(fileName)
 
 	if(fileName.includes('.lp')){
 
-		let results = getRanges(activeEditor.document.getText(), getExtraFiles(activeEditor));
-		activeEditor.setDecorations(underlineRed, results[0]);
-		console.log(results);
+		let disposable = loadThings(activeEditor);
+		context.subscriptions.push(disposable);
 
 		vscode.workspace.onDidChangeTextDocument(() => {
-			results = getRanges(activeEditor.document.getText(), getExtraFiles(activeEditor));
-			activeEditor.setDecorations(underlineRed, results[0]);
-			console.log(results);
+			disposable.dispose();
+			disposable = loadThings(activeEditor);
+			context.subscriptions.push(disposable);
 		});
 
 		vscode.window.onDidChangeActiveTextEditor(editor => {
@@ -97,42 +156,11 @@ function activate(context) {
 
 			if(fileName.includes('.lp')){
 				activeEditor = editor;
-				results = getRanges(editor.document.getText(), getExtraFiles(activeEditor));
-				editor.setDecorations(underlineRed, results[0]);
-				console.log(results);
+				disposable.dispose();
+				disposable = loadThings(activeEditor);
+				context.subscriptions.push(disposable);
 			}
 		});	
-		
-		let disposable = vscode.languages.registerHoverProvider('*', {
-			provideHover(document, position) {
-				for (let i = 0; i<results[1][1].length; i++) {	
-					if (results[0][i].contains(position)) {
-						const hoverMessage = new vscode.Hover(results[1][1][i]);
-						return hoverMessage;
-					}
-				}
-			}
-		});
-
-		context.subscriptions.push(disposable);
-		
-		const keys = [...results[1][3].keys()];
-		const ranges = [];
-
-		for(const range of keys)
-			ranges.push(convertRange(range))
-		
-		/*
-		// Create a decoration type for the clickable range
-		const decorationType = vscode.window.createTextEditorDecorationType({
-			cursor: 'pointer',
-		});
-
-		// Apply the decoration to the range
-		vscode.window.activeTextEditor.setDecorations(decorationType, ranges);
-
-		context.subscriptions.push(disposable);
-		*/
 	}
 }
 
