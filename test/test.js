@@ -1618,6 +1618,118 @@ describe('Extension', function () {
           'Error, predicates a/0, b/0 and c/0 are not defined yet.']]);
       });
     });
+
+    describe('Warning Tests', function () {
+      it('test 1 - one definition without comment', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/Warning_Tests/test1_warning.lp').toLocaleString();
+
+        let result = loadErrors(file, ""); result = [result[4], result[5]]
+        assert.deepEqual(result, [[{ lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 8 }],
+        ['Warning. This line is defining a predicate without proper commenting (line 1).']]);
+      });
+
+      it('test 2 - multiple definitions without comments', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/Warning_Tests/test2_warning.lp').toLocaleString();
+
+        let result = loadErrors(file, ""); result = [result[4], result[5]]
+        assert.deepEqual(result, [[{ lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 8 },
+        { lineStart: 4, lineEnd: 4, indexStart: 0, indexEnd: 33 },
+        { lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 33 },
+        { lineStart: 10, lineEnd: 10, indexStart: 0, indexEnd: 33 },
+        { lineStart: 13, lineEnd: 13, indexStart: 0, indexEnd: 76 }],
+        ['Warning. This line is defining a predicate without proper commenting (line 1).',
+          'Warning. This line is defining a predicate without proper commenting (line 4).',
+          'Warning. This line is defining a predicate without proper commenting (line 7).',
+          'Warning. This line is defining a predicate without proper commenting (line 10).',
+          'Warning. This line is defining a predicate without proper commenting (line 13).']]);
+      });
+
+      it('test 3 - one definition without comment', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/Warning_Tests/test3_warning.lp').toLocaleString();
+
+        let result = loadErrors(file, ""); result = [result[4], result[5]]
+        assert.deepEqual(result, [[{ lineStart: 6, lineEnd: 6, indexStart: 0, indexEnd: 33 }],
+        ['Warning. This line is defining a predicate without proper commenting (line 6).']]);
+      });
+    });
+
+    describe('Predicate Tests', function () {
+      it('test 1 - one file fully commented', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/Predicate_Tests/test1_predicates.lp').toLocaleString();
+
+        let result = loadErrors(file, ""); result = [result[2], result[3]]
+        assert.deepEqual(result, [[{ lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 1 },
+        { lineStart: 4, lineEnd: 4, indexStart: 2, indexEnd: 4 },
+        { lineStart: 4, lineEnd: 4, indexStart: 12, indexEnd: 13 },
+        { lineStart: 4, lineEnd: 4, indexStart: 22, indexEnd: 23 },
+        { lineStart: 4, lineEnd: 4, indexStart: 28, indexEnd: 29 },
+        { lineStart: 7, lineEnd: 7, indexStart: 0, indexEnd: 7 },
+        { lineStart: 7, lineEnd: 7, indexStart: 20, indexEnd: 21 },
+        { lineStart: 7, lineEnd: 7, indexStart: 26, indexEnd: 27 },
+        { lineStart: 7, lineEnd: 7, indexStart: 32, indexEnd: 33 },
+        { lineStart: 7, lineEnd: 7, indexStart: 38, indexEnd: 39 },
+        { lineStart: 10, lineEnd: 10, indexStart: 3, indexEnd: 10 },
+        { lineStart: 10, lineEnd: 10, indexStart: 21, indexEnd: 23 },
+        { lineStart: 10, lineEnd: 10, indexStart: 32, indexEnd: 34 },
+        { lineStart: 12, lineEnd: 12, indexStart: 6, indexEnd: 8 }],
+        ['positions (line 2).',
+          ' each position has exactly 1 number (line 5).',
+          'positions (line 2).',
+          'positions (line 2).',
+          'positions (line 2).',
+          ' defining a subgrid (line 8).',
+          'positions (line 2).',
+          'positions (line 2).',
+          'positions (line 2).',
+          'positions (line 2).',
+          ' defining a subgrid (line 8).',
+          ' each position has exactly 1 number (line 5).',
+          ' each position has exactly 1 number (line 5).',
+          ' each position has exactly 1 number (line 5).']]);
+      });
+
+      it('test 2 - one file without a comment on a definition', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/Predicate_Tests/test2_predicates.lp').toLocaleString();
+
+        let result = loadErrors(file, ""); result = [result[2], result[3]]
+        assert.deepEqual(result, [[{lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 1},
+          {lineStart: 5, lineEnd: 5, indexStart: 6, indexEnd: 8}],
+        ['positions (line 2).',
+        'No comment where this predicate is defined (line 4).']]);
+      });
+
+      it('test 3 - one file with the same predicate being defined twice', function () {
+
+        let file = readFileSync(PATH + '/loadErrors/Predicate_Tests/test3_predicates.lp').toLocaleString();
+
+        let result = loadErrors(file, ""); result = [result[2], result[3]]
+        assert.deepEqual(result, [[{lineStart: 1, lineEnd: 1, indexStart: 0, indexEnd: 1},
+          {lineStart: 4, lineEnd: 4, indexStart: 2, indexEnd: 4},
+          {lineStart: 4, lineEnd: 4, indexStart: 12, indexEnd: 13},
+          {lineStart: 4, lineEnd: 4, indexStart: 22, indexEnd: 23},
+          {lineStart: 4, lineEnd: 4, indexStart: 28, indexEnd: 29},
+          {lineStart: 7, lineEnd: 7, indexStart: 2, indexEnd: 4},
+          {lineStart: 7, lineEnd: 7, indexStart: 12, indexEnd: 13},
+          {lineStart: 7, lineEnd: 7, indexStart: 22, indexEnd: 23},
+          {lineStart: 7, lineEnd: 7, indexStart: 28, indexEnd: 29},
+          {lineStart: 9, lineEnd: 9, indexStart: 6, indexEnd: 8}],
+        [' positions (line 2).',
+        ' each position has exactly 1 number (line 5). |  for each column, a number only occurs in one row (line 8).',
+        ' positions (line 2).',
+        ' positions (line 2).',
+        ' positions (line 2).',
+        ' each position has exactly 1 number (line 5). |  for each column, a number only occurs in one row (line 8).',
+        ' positions (line 2).',
+        ' positions (line 2).',
+        ' positions (line 2).',
+        ' each position has exactly 1 number (line 5). |  for each column, a number only occurs in one row (line 8).']]);
+      });
+    });
   });
 
   describe('multipleFiles', function () {

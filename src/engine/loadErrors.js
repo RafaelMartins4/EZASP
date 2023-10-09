@@ -428,23 +428,19 @@ function loadErrors(textRaw, extraTextRaw) {
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		for (const predicate of predicates[i].head) {
 			if (definitionMessages.has(JSON.stringify(predicate))) {
-				const a = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart);
-				for(const b of a)
-					if (linesWithPredicates.has(b)) 
-						linesWithPredicates.get(b).push(JSON.stringify(predicate))
-					else 
-						linesWithPredicates.set(b, JSON.stringify(predicate))
+				const ranges = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart);
+				for(const range of ranges)
+					if (!linesWithPredicates.has(JSON.stringify(range)))
+						linesWithPredicates.set(JSON.stringify(range), JSON.stringify(predicate))
 			}
 		}
 
 		for (const predicate of predicates[i].tail) {
 			if (definitionMessages.has(JSON.stringify(predicate))) {
-				const a = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart)
-				for(const b of a)
-					if (linesWithPredicates.has(JSON.stringify(predicate)))
-						linesWithPredicates.get(b).push(JSON.stringify(predicate))
-					else 
-						linesWithPredicates.set(b, JSON.stringify(predicate))
+				const ranges = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart)
+				for(const range of ranges)
+					if (!linesWithPredicates.has(JSON.stringify(predicate)))
+						linesWithPredicates.set(JSON.stringify(range), JSON.stringify(predicate))
 			}
 		}
 	}
@@ -457,8 +453,8 @@ function loadErrors(textRaw, extraTextRaw) {
 	
 
 	for(const key of keys){
-		if(!arrayOfPredicatesContaintsPredicateInLine(errorRanges,key.lineStart) && !arrayOfPredicatesContaintsPredicateInLine(warningRanges,key.lineStart)){
-			predicateRanges.push(key);
+		if(!arrayOfPredicatesContaintsPredicateInLine(errorRanges,JSON.parse(key).lineStart) && !arrayOfPredicatesContaintsPredicateInLine(warningRanges,JSON.parse(key).lineStart)){
+			predicateRanges.push(JSON.parse(key));
 			predicateMessages.push(definitionMessages.get(linesWithPredicates.get(key)));
 		}
 	}
@@ -466,7 +462,7 @@ function loadErrors(textRaw, extraTextRaw) {
 	const warningMessages = [];
 
 	for(const range of warningRanges){
-		warningMessages.push("Warning. This line is defining a predicate without proper commenting. (line "+range.lineStart+").");
+		warningMessages.push("Warning. This line is defining a predicate without proper commenting (line "+range.lineStart+").");
 	}
 	
 	return [errorRanges, errorMessages, predicateRanges, predicateMessages, warningRanges, warningMessages];

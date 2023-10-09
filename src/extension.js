@@ -6,6 +6,14 @@ const { readFileSync, existsSync } = require('fs');
 
 const path = require('path');
 
+const underlineRed = vscode.window.createTextEditorDecorationType({
+	textDecoration: 'underline wavy red'
+});
+
+const underlineYellow = vscode.window.createTextEditorDecorationType({
+	textDecoration: 'underline wavy yellow'
+});
+
 /**
  * @param {{ lineStart: number; indexStart: number; lineEnd: number; indexEnd: number; }} range
  */
@@ -74,13 +82,6 @@ function getExtraFiles(activeEditor){
 }
 
 function loadThings(activeEditor){
-	const underlineRed = vscode.window.createTextEditorDecorationType({
-		textDecoration: 'underline wavy red'
-	});
-
-	const underlineYellow = vscode.window.createTextEditorDecorationType({
-		textDecoration: 'underline wavy yellow'
-	});
 
 	let results = getRanges(activeEditor.document.getText(), getExtraFiles(activeEditor));
 		activeEditor.setDecorations(underlineRed, results[1]);
@@ -132,9 +133,7 @@ function loadThings(activeEditor){
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-
 	
-	//Loads the underlines in the editor, and reloads on every change on the document
 	let activeEditor = vscode.window.activeTextEditor;
 
 	const fileName = activeEditor.document.fileName;
@@ -146,6 +145,9 @@ function activate(context) {
 
 		vscode.workspace.onDidChangeTextDocument(() => {
 			disposable.dispose();
+			activeEditor.setDecorations(underlineRed,[]);
+			activeEditor.setDecorations(underlineYellow,[]);
+
 			disposable = loadThings(activeEditor);
 			context.subscriptions.push(disposable);
 		});
@@ -157,6 +159,9 @@ function activate(context) {
 			if(fileName.includes('.lp')){
 				activeEditor = editor;
 				disposable.dispose();
+				activeEditor.setDecorations(underlineRed,[]);
+				activeEditor.setDecorations(underlineYellow,[]);
+
 				disposable = loadThings(activeEditor);
 				context.subscriptions.push(disposable);
 			}
