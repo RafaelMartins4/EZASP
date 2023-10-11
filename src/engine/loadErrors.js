@@ -37,6 +37,16 @@ function arrayOfPredicatesContaintsPredicateInLine(array, line) {
 	return false;
 }
 
+function has(array, string){
+	for (const element of array) {
+		if (element == string) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 function getPredicatesRanges(predicate, line, start) {
 	const results = [];
 
@@ -59,7 +69,7 @@ function getPredicatesRanges(predicate, line, start) {
 /**
  * @param {string} textRaw
  */
-function loadErrors(textRaw, extraTextRaw) {
+function loadErrors(textRaw, extraTextRaw, features) {
 
 	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
@@ -72,6 +82,19 @@ function loadErrors(textRaw, extraTextRaw) {
 		SPLIT_CODE = '\r\n';
 	else
 		SPLIT_CODE = '\n';
+
+	
+	const featuresExists = features != [];
+
+	let errors = false;
+	let warnings = false;
+	let comments = false;
+
+	if(featuresExists){
+		errors = has(features,"errors");
+		warnings = has(features,"warnings");
+		comments = has(features,"comments");
+	}
 
 	//Gets the document and splits it into an array of lines
 	const text = textRaw.split(SPLIT_CODE);
@@ -92,9 +115,6 @@ function loadErrors(textRaw, extraTextRaw) {
 	const extraPredicates = extraResult2.predicates;
 	const extraNonReductantRules = extraResult2.nonReductantRules;
 
-	/*
-		Underlines and provides error message to every rule in the ASP that violates the EZASP protocol
-	*/
 	let errorRanges = [];
 	let errorMessages = [];
 
@@ -268,6 +288,8 @@ function loadErrors(textRaw, extraTextRaw) {
 
 	const definedPredicates = [];
 
+	const definitionMessages = new Map();
+
 	for (let i = 0; i < extraNonReductantRules.length; i++) {
 		if (extraNonReductantRules[i][0] != INVALID_RULE) {
 			for (const predicate of extraPredicates[i].head) {
@@ -283,9 +305,8 @@ function loadErrors(textRaw, extraTextRaw) {
 	}
 
 	const undefinedPredicates = new Map();
-	const definitionMessages = new Map();
 
-	const warningRanges = [];
+	let warningRanges = [];
 
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		let hasDefinedMessage = false;
@@ -445,8 +466,8 @@ function loadErrors(textRaw, extraTextRaw) {
 		}
 	}
 
-	const predicateRanges = [];
-	const predicateMessages = [];
+	let predicateRanges = [];
+	let predicateMessages = [];
 
 	const keys = [...linesWithPredicates.keys()];
 
@@ -459,12 +480,28 @@ function loadErrors(textRaw, extraTextRaw) {
 		}
 	}
 
-	const warningMessages = [];
+	let warningMessages = [];
 
 	for(const range of warningRanges){
 		warningMessages.push("Warning. This line is defining a predicate without proper commenting (line "+range.lineStart+").");
 	}
-	
+
+	if(featuresExists){
+		if(!errors){
+			errorRanges = [];
+			errorMessages = [];
+		}
+		if(!warnings){
+			warningRanges = [];
+			warningMessages = [];
+		}
+		if(!comments){
+			predicateRanges = [];
+			predicateMessages = [];
+		}
+			
+	}
+
 	return [errorRanges, errorMessages, predicateRanges, predicateMessages, warningRanges, warningMessages];
 }
 

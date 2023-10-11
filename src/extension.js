@@ -6,6 +6,8 @@ const { readFileSync, existsSync } = require('fs');
 
 const path = require('path');
 
+let features = [];
+
 const underlineRed = vscode.window.createTextEditorDecorationType({
 	textDecoration: 'underline wavy red'
 });
@@ -28,7 +30,7 @@ function convertRange(range){
  * @param {string} text
  */
 function getRanges(text, extraText){
-	const data = loadErrors(text, extraText);
+	const data = loadErrors(text, extraText, features);
 
 	const errorRanges = [];
 	const predicateRanges = [];
@@ -62,11 +64,15 @@ function getExtraFiles(activeEditor){
 		const addFiles = json.additionalFiles;
 		const split = fileName.split('\\');
 
+		if(json.features)
+			features = json.features;
+
 		if(addFiles.includes(split[split.length])){
 			for (const item of addFiles)
 				if (item !== split[split.length]) 
 					files.push(item);
 		}
+
 		else
 			files = addFiles;
 	}
