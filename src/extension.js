@@ -2,11 +2,12 @@ const vscode = require('vscode');
 
 const { loadErrors } = require('./engine/loadErrors');
 
-const { readFileSync, existsSync } = require('fs');
+const { readFileSync, existsSync, writeFileSync } = require('fs');
 
 const path = require('path');
+const { dirname } = require('path');
 
-let features = [];
+let disableFeatures;
 
 const underlineRed = vscode.window.createTextEditorDecorationType({
 	textDecoration: 'underline wavy red'
@@ -30,21 +31,26 @@ function convertRange(range){
  * @param {string} text
  */
 function getRanges(text, extraText){
-	const data = loadErrors(text, extraText, features);
+	const data = loadErrors(text, extraText, disableFeatures);
 
 	const errorRanges = [];
 	const predicateRanges = [];
 	const warningRanges = [];
 
+	if(data[0])
 	data[0].forEach(range => {
 		errorRanges.push(convertRange(range));
 	})
 
-	for(const range of data[2])
+	if(data[2])
+	data[2].forEach(range => {
 		predicateRanges.push(convertRange(range));
+	})
 
-	for(const range of data[4])
+	if(data[4])
+	data[4].forEach(range => {
 		warningRanges.push(convertRange(range));
+	})
 
 	return [data,errorRanges,predicateRanges,warningRanges];
 }	
@@ -64,8 +70,8 @@ function getExtraFiles(activeEditor){
 		const addFiles = json.additionalFiles;
 		const split = fileName.split('\\');
 
-		if(json.features)
-			features = json.features;
+		if(json.disableFeatures)
+			disableFeatures = json.disableFeatures;
 
 		if(addFiles.includes(split[split.length])){
 			for (const item of addFiles)
@@ -159,12 +165,12 @@ function activate(context) {
 		});
 
 		vscode.window.onDidChangeActiveTextEditor(editor => {
+
 			const fileName = editor.document.fileName;
-			console.log(fileName)
 
 			if(fileName.includes('.lp')){
 				activeEditor = editor;
-				disposable.dispose();
+				disposable.dispose();	
 				activeEditor.setDecorations(underlineRed,[]);
 				activeEditor.setDecorations(underlineYellow,[]);
 
@@ -173,6 +179,14 @@ function activate(context) {
 			}
 		});	
 	}
+
+	const initClingoConfig = vscode.commands.registerCommand('createConfig', function () {
+
+		const sampleConfig = readFileSync(`${context.asAbsolutePath("")}/src/sampleConfig.json`);
+		writeFileSync(`${dirname(vscode.window.activeTextEditor.document.fileName)}/config.json`, sampleConfig);
+	});
+
+	context.subscriptions.push(initClingoConfig);
 }
 
 function deactivate() { }

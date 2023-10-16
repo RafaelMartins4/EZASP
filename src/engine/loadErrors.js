@@ -37,16 +37,6 @@ function arrayOfPredicatesContaintsPredicateInLine(array, line) {
 	return false;
 }
 
-function has(array, string){
-	for (const element of array) {
-		if (element == string) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 function getPredicatesRanges(predicate, line, start) {
 	const results = [];
 
@@ -69,7 +59,7 @@ function getPredicatesRanges(predicate, line, start) {
 /**
  * @param {string} textRaw
  */
-function loadErrors(textRaw, extraTextRaw, features) {
+function loadErrors(textRaw, extraTextRaw, disableFeatures) {
 
 	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
@@ -82,18 +72,17 @@ function loadErrors(textRaw, extraTextRaw, features) {
 		SPLIT_CODE = '\r\n';
 	else
 		SPLIT_CODE = '\n';
-
 	
-	const featuresExists = features != [];
+	let orderErrors;
+	let predicateErrors;
+	let warnings;
+	let hover;
 
-	let errors = false;
-	let warnings = false;
-	let comments = false;
-
-	if(featuresExists){
-		errors = has(features,"errors");
-		warnings = has(features,"warnings");
-		comments = has(features,"comments");
+	if(disableFeatures){
+		orderErrors = disableFeatures.orderErrors;
+		predicateErrors = disableFeatures.predicateErrors;
+		warnings = disableFeatures.commentWarnings;
+		hover = disableFeatures.hoverPredicates;
 	}
 
 	//Gets the document and splits it into an array of lines
@@ -408,13 +397,16 @@ function loadErrors(textRaw, extraTextRaw, features) {
 		}
 	}
 
+	let predicateErrorRanges = [];
+	let predicateErrorMessages = [];
+
 	for (const key of undefinedPredicates.keys()) {
-		errorRanges.push(key);
+		predicateErrorRanges.push(key);
 
 		const predicates = undefinedPredicates.get(key);
 
 		if (predicates.length == 1)
-			errorMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
+			predicateErrorMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
 
 		else {
 			let names = "";
@@ -427,7 +419,7 @@ function loadErrors(textRaw, extraTextRaw, features) {
 				else
 					names = names + ", " + predicates[j].name + "/" + predicates[j].arguments;
 
-			errorMessages.push("Error, predicates" + names + " are not defined yet.")
+				predicateErrorMessages.push("Error, predicates" + names + " are not defined yet.")
 		}
 	}
 
@@ -486,23 +478,27 @@ function loadErrors(textRaw, extraTextRaw, features) {
 		warningMessages.push("Warning. This line is defining a predicate without proper commenting (line "+range.lineStart+").");
 	}
 
-	if(featuresExists){
-		if(!errors){
+	if(disableFeatures){
+		if(JSON.parse(orderErrors)){
 			errorRanges = [];
 			errorMessages = [];
 		}
-		if(!warnings){
+		if(JSON.parse(predicateErrors)){
+			predicateErrorRanges = [];
+			predicateErrorMessages = [];
+		}
+		if(JSON.parse(warnings)){
 			warningRanges = [];
 			warningMessages = [];
 		}
-		if(!comments){
+		if(JSON.parse(hover)){
 			predicateRanges = [];
 			predicateMessages = [];
 		}
 			
 	}
 
-	return [errorRanges, errorMessages, predicateRanges, predicateMessages, warningRanges, warningMessages];
+	return [errorRanges.concat(predicateErrorRanges), errorMessages.concat(predicateErrorMessages), predicateRanges, predicateMessages, warningRanges, warningMessages];
 }
 
 module.exports = { loadErrors }

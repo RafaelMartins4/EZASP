@@ -3,9 +3,13 @@
     "version": "0.1.0",
     "description": "Documentation: https://github.com/potassco/guide/releases/download/v2.2.0/guide.pdf",
     "author": "John Doe",
-    "additionalFiles": [
-        "facts1.lp"
-    ],
+    "additionalFiles": [],
+    "disableFeatures":{
+        "orderErrors":"true",
+        "predicateErrors":"false",
+        "hoverPredicates":"true",
+        "commentWarnings":"true"
+    },
     "args": {
         "verboseMode": 1,
         "outputFormat": 0,

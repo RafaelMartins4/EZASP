@@ -4,8 +4,14 @@
     "description": "Documentation: https://github.com/potassco/guide/releases/download/v2.2.0/guide.pdf",
     "author": "John Doe",
     "additionalFiles": [
-        "facts1.lp"
+        "filename.lp"
     ],
+    "disableFeatures":{
+        "orderErrors":"false",
+        "predicateErrors":"false",
+        "hoverPredicates":"false",
+        "commentWarnings":"false"
+    },
     "args": {
         "verboseMode": 1,
         "outputFormat": 0,
