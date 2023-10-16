@@ -70,8 +70,12 @@ function getExtraFiles(activeEditor){
 		const addFiles = json.additionalFiles;
 		const split = fileName.split('\\');
 
+		console.log(json.disableFeatures)
+
 		if(json.disableFeatures)
 			disableFeatures = json.disableFeatures;
+		else
+			disableFeatures = undefined;
 
 		if(addFiles.includes(split[split.length])){
 			for (const item of addFiles)
@@ -82,6 +86,8 @@ function getExtraFiles(activeEditor){
 		else
 			files = addFiles;
 	}
+	else
+		disableFeatures = undefined;
   
 	for(const file of files){
 		if(existsSync(dir+'/'+file))
