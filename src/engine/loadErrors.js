@@ -21,7 +21,7 @@ function arrayContainsObject(array, object) {
 	for (const element of array) {
 		if (JSON.stringify(element) == JSON.stringify(object)) {
 			return true;
-		}
+		}	
 	}
 
 	return false;

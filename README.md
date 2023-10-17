@@ -1,67 +1,47 @@
 # EZASP - Making Answer Set Programming Easier
 
-This Visual Studio Code extension is made specifically for users who are learning Answer Set Programming
+My name is Ramiro Henriques, a student in the final year of the Integrated Masters in Computer Science and Engineering in the NOVA School of Science and Technology. My dissertation consists of making an editing tool for Answer Set Programming, with the goal of assisting newcomers to ASP understanding it.
 
--- STILL IN DEVELOPMENT -- this readme from now on is a template, to be changed --
+## Dependencies
+This extension was built on top of two other extensions:
+
+Answer Set Programming Language Support by Florian Frankreiter;
+
+asp-syntax-highlight by Arnaud Belcour;
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### Order Errors
 
-For example if there is an image subfolder under your extension project workspace:
+Rules must be in the following order: constants, facts, choices, definitions, constraints, and show statements. The extension checks for line order and highlights any out-of-order lines with a red underline. Additionally, a hover message explains what is the error.
 
-\!\[feature X\]\(images/feature-x.png\)
+### Predicate Validation
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+The extension also highlights with a red underline if a predicate has not been defined in a previous line, and shows an hover message to explain which predicate has not been defined yet.
+
+### On-Hover Predicate Information
+
+When you hover over a predicate, the extension reveals a pop-up message containing the comment added by the user where the predicate was defined.
+
+### Missing Comment Warning
+
+It detects predicates defined without preceding comments and highlights them with a yellow underline, and on hover a message will appear explaining why is this line highlighted.
+
+### Multi-File Support
+
+As it has already been mentioned, this Visual Studio Code extension is created with base on other two extensions. In one of them, you can break your program into multiple files, as long as they are stored within the same directory and in that same directory includes a config.json file with an array containing the names of the additional files. In the EZASP extension, we added to this feature, by making it so that if the config file has the additional files, the predicate validation and on-hover predicate information features will keep their capabilities throughout the multiple files. Aditionally, if you create the config.json file using the command in the command pallete "EZASP - create config.json file" it will have an additional entry for disableFeatures. Here, by switching the values from false to true, you can disable the features and choose which ones are you interested in using.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+If you have not done it yet, it would be required for you to install Visual Studio Code, and then the extension called EZASP, which you can install by either searching for it directly on VS Code on the extension marketplace tab, or just go directly to the specific EZASP marketplace website.
 
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+//TODO
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+//TODO
