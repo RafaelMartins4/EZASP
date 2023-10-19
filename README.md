@@ -27,6 +27,8 @@ The extension also highlights with a red underline if a predicate has not been d
 
 When you hover over a predicate, the extension reveals a pop-up message containing the comment added by the user and where the predicate was defined.
 
+![Screenshot](example_images/on_hover.png)
+
 ### Missing Comment Warning
 
 Rules without preceding comments are highlighted (yellow underline), and on hover a message will appear explaining this.
