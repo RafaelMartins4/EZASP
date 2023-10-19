@@ -479,19 +479,19 @@ function loadErrors(textRaw, extraTextRaw, disableFeatures) {
 	}
 
 	if(disableFeatures){
-		if(JSON.parse(orderErrors)){
+		if(orderErrors == "true"){
 			errorRanges = [];
 			errorMessages = [];
 		}
-		if(JSON.parse(predicateErrors)){
+		if(predicateErrors == "true"){
 			predicateErrorRanges = [];
 			predicateErrorMessages = [];
 		}
-		if(JSON.parse(warnings)){
+		if(warnings == "true"){
 			warningRanges = [];
 			warningMessages = [];
 		}
-		if(JSON.parse(hover)){
+		if(hover == "true"){
 			predicateRanges = [];
 			predicateMessages = [];
 		}
