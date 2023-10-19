@@ -17,6 +17,18 @@ const underlineYellow = vscode.window.createTextEditorDecorationType({
 	textDecoration: 'underline wavy yellow'
 });
 
+const MAC_OS = 1;
+const WINDOWS = 2;
+const LINUX = 3;
+
+function detectOS() {
+	switch (process.platform) {
+		case "darwin": return MAC_OS;
+		case "win32": return WINDOWS;
+		default: return LINUX;
+	}
+}
+
 /**
  * @param {{ lineStart: number; indexStart: number; lineEnd: number; indexEnd: number; }} range
  */
@@ -62,15 +74,18 @@ function getExtraFiles(activeEditor){
 
 	let files = [];
 
-	let text = "";
+	let text = [];
 
 	if(existsSync(dir+'/config.json')){
 		const fileData = readFileSync(dir+'/config.json', 'utf-8');
         const json = JSON.parse(fileData);
 		const addFiles = json.additionalFiles;
-		const split = fileName.split('\\');
-
-		console.log(json.disableFeatures)
+		
+		let split;
+		if(detectOS() == WINDOWS)
+			split = fileName.split('\\');
+		else
+			split = fileName.split('/');
 
 		if(json.disableFeatures)
 			disableFeatures = json.disableFeatures;
@@ -91,12 +106,12 @@ function getExtraFiles(activeEditor){
   
 	for(const file of files){
 		if(existsSync(dir+'/'+file))
-			text = text + readFileSync(dir+'/'+file, 'utf-8');
+			text.push(readFileSync(dir+'/'+file, 'utf-8'));
 		else
 			vscode.window.showErrorMessage('File ' +file+ ' does not exist in this folder, check config.json file.');
 	}
 
-	return text;
+	return [files,text];
 }
 
 function loadThings(activeEditor){

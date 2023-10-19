@@ -96,13 +96,19 @@ function loadErrors(textRaw, extraTextRaw, disableFeatures) {
 	const predicates = result2.predicates;
 	const nonReductantRules = result2.nonReductantRules;
 
-	const extraText = extraTextRaw.split(SPLIT_CODE);
-	const extraResult1 = formatText(extraText);
-	const extraFormattedText = extraResult1.formattedText;
+	const extraText = [];
+	const extraPredicates = [];
+	const extraFormattedText = [];
+	const extraNonReductantRules = [];
 
-	const extraResult2 = getPredicates(extraFormattedText);
-	const extraPredicates = extraResult2.predicates;
-	const extraNonReductantRules = extraResult2.nonReductantRules;
+	for(const text of extraTextRaw[1]){
+		extraText.push(text.split(SPLIT_CODE));
+		const extraResult1 = formatText(text.split(SPLIT_CODE));
+		extraFormattedText.push(extraResult1.formattedText);
+		const extraResult2 = getPredicates(extraResult1.formattedText);
+		extraPredicates.push(extraResult2.predicates);
+		extraNonReductantRules.push(extraResult2.nonReductantRules);
+	}
 
 	let errorRanges = [];
 	let errorMessages = [];
@@ -279,15 +285,17 @@ function loadErrors(textRaw, extraTextRaw, disableFeatures) {
 
 	const definitionMessages = new Map();
 
-	for (let i = 0; i < extraNonReductantRules.length; i++) {
-		if (extraNonReductantRules[i][0] != INVALID_RULE) {
-			for (const predicate of extraPredicates[i].head) {
-				const tmp = extraFormattedText[extraNonReductantRules[i][1]].split(':-')[0];
-				if (extraNonReductantRules[i][0] != SHOW_STATEMEMENT) {
-					if (!tmp.includes(':'))
-						definedPredicates.push(predicate)
-					else if (!tmp.split(':')[1].includes(predicate.name))
-						definedPredicates.push(predicate)
+	for (let j = 0; j < extraNonReductantRules.length; j++) {
+		for(let i = 0; i < extraNonReductantRules[j].length; i++){
+			if (extraNonReductantRules[j][i][0] != INVALID_RULE) {
+				for (const predicate of extraPredicates[j][i].head) {
+					const tmp = extraFormattedText[j][extraNonReductantRules[j][i][1]].split(':-')[0];
+					if (extraNonReductantRules[j][i][0] != SHOW_STATEMEMENT) {
+						if (!tmp.includes(':'))
+							definedPredicates.push(predicate)
+						else if (!tmp.split(':')[1].includes(predicate.name))
+							definedPredicates.push(predicate)
+					}
 				}
 			}
 		}
