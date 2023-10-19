@@ -33,6 +33,8 @@ When you hover over a predicate, the extension reveals a pop-up message containi
 
 Rules without preceding comments are highlighted (yellow underline), and on hover a message will appear explaining this.
 
+![Screenshot](example_images/warning.png)
+
 ### Multi-File Support
 
 Building on the asp-language support extension, you can can use a config.json file to specify which of the previous features you want to be active. The assessment should focus solely on this and the corresponding command in the command pallete "EZASP - create config.json file” (and not on running clingo with several files).
