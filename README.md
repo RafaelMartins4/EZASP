@@ -1,10 +1,4 @@
-# EZASP - Making Answer Set Programming Easier
-
-My name is Ramiro Henriques, a student in the final year of the Integrated Masters in Computer Science and Engineering in the NOVA School of Science and Technology. My dissertation consists of making an editing tool for Answer Set Programming, with the goal of assisting newcomers to ASP understanding it.
-
-## Requirements
-
-If you have not done it yet, it would be required for you to install [Visual Studio Code](https://code.visualstudio.com/), and then the extension called EZASP, which you can install by either searching for it directly on VS Code on the extension marketplace tab, or just go directly to the specific EZASP [marketplace website](https://marketplace.visualstudio.com/items?itemName=RamiroHenriques.ezasp).
+# EZASP - Making Learning Answer Set Programming Easier
 
 ## Dependencies
 This extension was built on top of two other extensions:
@@ -17,9 +11,9 @@ When you install this VS Code extension, it will also install the other two auto
 
 ## Features
 
-### Order Errors
+### Warnings about Order of Rules Errors
 
-Rules must be in the following order: constants, facts, choices, definitions, constraints, and show statements. The extension checks for line order and highlights any out-of-order lines with a red underline. Additionally, a hover message explains what is the error.
+Rules must appear in the following order: constants, facts, choices, definitions, constraints, and show statements. The extension checks this and highlights any out-of-order rules (red underline). Additionally, a hover message explains what the error is.
 
 ### Predicate Validation
 
@@ -27,12 +21,12 @@ The extension also highlights with a red underline if a predicate has not been d
 
 ### On-Hover Predicate Information
 
-When you hover over a predicate, the extension reveals a pop-up message containing the comment added by the user where the predicate was defined.
+When you hover over a predicate, the extension reveals a pop-up message containing the comment added by the user and where the predicate was defined.
 
 ### Missing Comment Warning
 
-It detects predicates defined without preceding comments and highlights them with a yellow underline, and on hover a message will appear explaining why is this line highlighted.
+Rules without preceding comments are highlighted (yellow underline), and on hover a message will appear explaining this.
 
 ### Multi-File Support
 
-As it has already been mentioned, this Visual Studio Code extension is created with base on other two extensions. In one of them, you can break your program into multiple files, as long as they are stored within the same directory and in that same directory includes a config.json file with an array containing the names of the additional files. In the EZASP extension, we added to this feature, by making it so that if the config file has the additional files, the predicate validation and on-hover predicate information features will keep their capabilities throughout the multiple files. Aditionally, if you create the config.json file using the command in the command pallete "EZASP - create config.json file" it will have an additional entry for disableFeatures. Here, by switching the values from false to true, you can disable the features and choose which ones are you interested in using.
+Building on the asp-language support extension, you can can use a config.json file to specify which of the previous features you want to be active. The assessment should focus solely on this and the corresponding command in the command pallete "EZASP - create config.json file” (and not on running clingo with several files).
