@@ -5,9 +5,11 @@ My name is Ramiro Henriques, a student in the final year of the Integrated Maste
 ## Dependencies
 This extension was built on top of two other extensions:
 
-Answer Set Programming Language Support by Florian Frankreiter;
+- Answer Set Programming Language Support by Florian Frankreiter
 
-asp-syntax-highlight by Arnaud Belcour;
+- asp-syntax-highlight by Arnaud Belcour
+
+While installing EZASP, Visual Studio Code will also install the other two automatically, but in case any problem happens you should keep this in mind.
 
 ## Features
 
