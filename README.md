@@ -21,6 +21,8 @@ Rules must appear in the following order: constants, facts, choices, definitions
 
 The extension also highlights with a red underline if a predicate has not been defined in a previous line, and shows an hover message to explain which predicate has not been defined yet.
 
+![Screenshot](example_images/predicate_validation.png)
+
 ### On-Hover Predicate Information
 
 When you hover over a predicate, the extension reveals a pop-up message containing the comment added by the user and where the predicate was defined.
