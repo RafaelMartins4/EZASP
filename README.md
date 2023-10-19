@@ -1,5 +1,7 @@
 # EZASP - Making Learning Answer Set Programming Easier
 
+This Visual Studio Code extension enhances your Answer Set Programming (ASP) development experience by introducing a range of features. Specifically designed to cater to newcomers in the ASP field, this extension provides functionalities that facilitate your ASP coding process, in hopes of helping to write efficient, error-free ASP code.
+
 ## Dependencies
 This extension was built on top of two other extensions:
 
