@@ -42,8 +42,8 @@ function convertRange(range){
 /**
  * @param {string} text
  */
-function getRanges(text, extraText){
-	const data = loadErrors(text, extraText, disableFeatures);
+function getRanges(text, name, extraText){
+	const data = loadErrors(text, name, extraText, disableFeatures);
 
 	const errorRanges = [];
 	const predicateRanges = [];
@@ -114,9 +114,9 @@ function getExtraFiles(activeEditor){
 	return [files,text];
 }
 
-function loadThings(activeEditor){
+function loadThings(activeEditor, fileName){
 
-	let results = getRanges(activeEditor.document.getText(), getExtraFiles(activeEditor));
+	let results = getRanges(activeEditor.document.getText(), fileName, getExtraFiles(activeEditor));
 		activeEditor.setDecorations(underlineRed, results[1]);
 		activeEditor.setDecorations(underlineYellow, results[3]);
 
@@ -173,7 +173,7 @@ function activate(context) {
 
 	if(fileName.includes('.lp')){
 
-		let disposable = loadThings(activeEditor);
+		let disposable = loadThings(activeEditor, fileName);
 		context.subscriptions.push(disposable);
 
 		vscode.workspace.onDidChangeTextDocument(() => {
