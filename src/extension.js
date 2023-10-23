@@ -181,7 +181,7 @@ function activate(context) {
 			activeEditor.setDecorations(underlineRed,[]);
 			activeEditor.setDecorations(underlineYellow,[]);
 
-			disposable = loadThings(activeEditor);
+			disposable = loadThings(activeEditor, fileName);
 			context.subscriptions.push(disposable);
 		});
 
@@ -195,7 +195,7 @@ function activate(context) {
 				activeEditor.setDecorations(underlineRed,[]);
 				activeEditor.setDecorations(underlineYellow,[]);
 
-				disposable = loadThings(activeEditor);
+				disposable = loadThings(activeEditor, activeEditor.document.fileName);
 				context.subscriptions.push(disposable);
 			}
 		});	
