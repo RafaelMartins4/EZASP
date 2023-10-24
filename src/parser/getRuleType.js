@@ -49,6 +49,8 @@ function getRuleType(rule) {
 
 		if (rule[rule.length - 2].match(/[a-zA-Z]/) || rule[rule.length - 2].match(/[0-9]/))
 			return FACT;
+		else if(rule[rule.length-3] == '(' && rule[rule.length-2] == ')')
+			return FACT;
 		else {
 			for (let i = rule.length-2; i > 0; i--)
 				if (rule[i] != ')')

@@ -293,6 +293,16 @@ describe('Extension', function () {
       const result = getRuleType('#const n = 1.');
       assert.equal(result, CONSTANT);
     });
+
+    it(' "n()." must be a fact', function () {
+      const result = getRuleType('n().');
+      assert.equal(result, FACT);
+    });
+
+    it(' "{n()}." must be a choice', function () {
+      const result = getRuleType('{n()}.');
+      assert.equal(result, CHOICE);
+    });
   });
 
   describe('formatText', function () {
