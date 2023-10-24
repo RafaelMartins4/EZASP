@@ -169,7 +169,7 @@ function activate(context) {
 	
 	let activeEditor = vscode.window.activeTextEditor;
 
-	const fileName = activeEditor.document.fileName;
+	let fileName = activeEditor.document.fileName;
 
 	if(fileName.includes('.lp')){
 
@@ -187,7 +187,7 @@ function activate(context) {
 
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 
-			const fileName = editor.document.fileName;
+			fileName = editor.document.fileName;
 
 			if(fileName.includes('.lp')){
 				activeEditor = editor;
@@ -195,7 +195,7 @@ function activate(context) {
 				activeEditor.setDecorations(underlineRed,[]);
 				activeEditor.setDecorations(underlineYellow,[]);
 
-				disposable = loadThings(activeEditor, activeEditor.document.fileName);
+				disposable = loadThings(activeEditor, fileName);
 				context.subscriptions.push(disposable);
 			}
 		});	
