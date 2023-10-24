@@ -257,6 +257,29 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
+	let foundChoice = false;
+	let constraintsEnded = false;	
+	for(let i = 0; i < nonReductantRules.length && !constraintsEnded; i++){
+		if (nonReductantRules[i][0] == CONSTANT) { }
+		else if (nonReductantRules[i][0] == FACT) { }
+		else if (nonReductantRules[i][0] == CHOICE) { 
+			foundChoice = true;
+		}
+		else if (nonReductantRules[i][0] == DEFINITION) { }
+		else if(nonReductantRules[i][0] == CONSTRAINT && !foundChoice){
+			for(let j = i; j<nonReductantRules.length && !constraintsEnded; j++){
+				if(nonReductantRules[j][0] != CONSTRAINT){
+					constraintsEnded = true;
+				}
+				else{
+					const range = lines[nonReductantRules[j][1]];
+					errorRanges.push(range); 	
+					errorMessages.push("Error, constraints must be preceded by choice rules.")
+				}
+			}	
+		}
+	}
+
 	let lastLineisShowStatement = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == CONSTANT) { }
@@ -753,7 +776,20 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let warningMessages = [];
 
-	for (const range of warningRanges) {
+	const checker = [];
+
+	for(const range of warningRanges){
+		const tmp = JSON.stringify(range);
+		if(!checker.includes(JSON.stringify(range)))
+			checker.push(tmp)
+	}
+
+	let warningRangesFinal = [];
+
+	for(const range of checker)
+		warningRangesFinal.push(JSON.parse(range))
+
+	for (const range of warningRangesFinal) {
 		warningMessages.push("Warning. This line is defining a predicate without proper commenting (line " + range.lineStart + ").");
 	}
 
@@ -767,7 +803,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			predicateErrorMessages = [];
 		}
 		if (warnings == "true") {
-			warningRanges = [];
+			warningRangesFinal = [];
 			warningMessages = [];
 		}
 		if (hover == "true") {
@@ -776,7 +812,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
-	return [errorRanges.concat(predicateErrorRanges), errorMessages.concat(predicateErrorMessages), predicateRanges, predicateMessages, warningRanges, warningMessages];
+	return [errorRanges.concat(predicateErrorRanges), errorMessages.concat(predicateErrorMessages), predicateRanges, predicateMessages, warningRangesFinal, warningMessages];
 }
 
 module.exports = { loadErrors }
