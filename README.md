@@ -44,3 +44,21 @@ If desired, you can disable any of first four features of this application. In t
 ![Screenshot](example_images/command.png)
 
 ![Screenshot](example_images/disable.png)
+
+## Patch Notes
+
+### 1.0.1
+
+ - Added copyright licence.
+
+ ### 1.0.2
+
+ - Fixed bug where the absolute of an number ( symbolised by |X|) was being read as an invalid rule.
+
+ ### 1.0.3
+
+ - Adjusted ReadMe picture sizes.
+
+ ### 1.0.4
+
+ - Fixed bug where while writing a new rule, the error messages were being shown on the previous rule.
