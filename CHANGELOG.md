@@ -22,3 +22,6 @@ Inicial release with:
 
 ## 1.0.4
 - Fixed bug where while writing a new rule, the error messages were being shown on the previous rule.
+
+## 1.0.5
+- Added patch notes `CHANGELOG.md` file.
