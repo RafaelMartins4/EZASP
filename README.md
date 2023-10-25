@@ -53,7 +53,7 @@ If desired, you can disable any of first four features of this application. In t
 
  ### 1.0.2
 
- - Fixed bug where the absolute of an number ( symbolised by |X|) was being read as an invalid rule.
+ - Fixed bug where the absolute of an number (symbolised by |X|) was being read as an invalid rule.
 
  ### 1.0.3
 
