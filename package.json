@@ -2,7 +2,7 @@
   "name": "ezasp",
   "displayName": "EZASP",
   "description": "Making Learning Answer Set Programming Easier",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "RamiroHenriques",
   "engines": {
     "vscode": "^1.80.0"

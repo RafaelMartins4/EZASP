@@ -35,7 +35,7 @@ When you hover over a predicate, the extension reveals a pop-up message containi
 
 Rules without preceding comments are highlighted (yellow underline), and on hover a message will appear explaining this.
 
-![Screenshot](example_images/warning_2.png)
+![Screenshot](example_images/warning_3.png)
 
 ### Feature Disablement
 
