@@ -18,6 +18,7 @@ function formatText(text){
 	if(text[0] == "")
 		i = 1;
 
+	let hasAddedText = false;	
 	for (i; i < text.length; i++) {
 		if(text[i].trim().includes('..'))
 			text[i] = text[i].trim().replace(/\.\./g,TEMP)
@@ -112,6 +113,7 @@ function formatText(text){
 				if(!lastEndsWithDot){
 					if(text.length == i+1){
 						text[i+1] = rules[rules.length-a].trim();
+						hasAddedText = true;
 					}
 					else
 						for(let j = i; text[j+1] == '' && j<text.length-1; j++){
@@ -143,23 +145,34 @@ function formatText(text){
 				else {
 					rule = rule.concat(text[j]);
 				}
-				i = j + 1;
+				if(text[j].trim() != "")
+					i = j + 1;
 			}
 			if(!rule.includes('.')){
-				start = start-1;
+				start = start;
 				formattedText.push(rule.trim());
-				let isNextLineEmpty = true;
-				while(isNextLineEmpty){
-					if(text[start] == "")
-						start++;
+
+				if(text[i-1].includes('.') && text.length == i+1 && !hasAddedText)
+					lines.push({lineStart: i, lineEnd:i, indexStart:0, indexEnd:text[i].length})
+
+				else if(hasAddedText){
+					lines.push({lineStart: i-1, lineEnd:i-1, indexStart:text[i-1].indexOf(text[i]), indexEnd:text[i-1].indexOf(text[i]) + text[i].length})
+					hasAddedText = false;
+				}
+				else{
+					let isNextLineEmpty = true;
+					while(isNextLineEmpty){
+						if(text[start] == "")
+							start++;
+						else
+							isNextLineEmpty = false;
+					}
+					if(text[i-1].includes('%'))
+						lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].lastIndexOf(rule[0]+rule[1]), indexEnd:text[i-1].lastIndexOf(rule[0]+rule[1]) + rule.length});
 					else
-						isNextLineEmpty = false;
+						lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].indexOf(rule[0]+rule[1]), indexEnd:text[i-1].length});
 				}
-				if(text[i-1].includes('%'))
-					lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].lastIndexOf(rule[0]+rule[1]), indexEnd:text[i-1].lastIndexOf(rule[0]+rule[1]) + rule.length});
-				else
-					lines.push({lineStart: start, lineEnd:i-1, indexStart:text[start].indexOf(rule[0]+rule[1]), indexEnd:text[i-1].length});
-				}
+			}
 		}
 		else if (text[i].trim().trim() != "") {
 			const split = text[i].trim().split('.')
