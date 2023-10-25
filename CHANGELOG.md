@@ -2,8 +2,23 @@
 
 All notable changes to the "ezasp" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+## 1.0.0
+Inicial release with:
+- Syntax checking;
+- Warnings about order of rules errors;
+- Predicate validation;
+- On-hover predicate information;
+- Missing comment warning;
+- Feature disablement.
 
-## [Unreleased]
+## 1.0.1
+- Added copyright licence.
 
-- Initial release
+## 1.0.2
+- Fixed bug where the absolute of an number (symbolised by |X|) was being read as an invalid rule.
+
+## 1.0.3
+- Adjusted `README.md` picture sizes.
+
+## 1.0.4
+- Fixed bug where while writing a new rule, the error messages were being shown on the previous rule.
