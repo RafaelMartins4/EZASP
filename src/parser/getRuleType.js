@@ -30,7 +30,7 @@ function getRuleType(rule) {
 		return COMMENT;
 	else if (rule.includes('%'))
 		rule = rule.split('%')[0].trim();
-	else if(!rule.match(/^[a-zA-Z0-9_#+-/*:{}(),.%<>=;!]+$/))
+	else if(!rule.match(/^[a-zA-Z0-9_#+-/*:{}(),.%|<>=;!]+$/))
 		return INVALID_RULE;
 	if (rule.startsWith("#show") && rule[rule.length-2].match(/[0-9]/))
 		return SHOW_STATEMEMENT;
