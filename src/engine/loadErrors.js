@@ -75,12 +75,14 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	else
 		SPLIT_CODE = '\n';
 
+	let syntax;
 	let orderErrors;
 	let predicateErrors;
 	let warnings;
 	let hover;
 
 	if (disableFeatures) {
+		syntax = disableFeatures.syntaxChecking;
 		orderErrors = disableFeatures.orderErrors;
 		predicateErrors = disableFeatures.predicateErrors;
 		warnings = disableFeatures.commentWarnings;
@@ -123,16 +125,20 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	* ---------- CALCULATE ORDER ERRORS ----------
 	*/
 
-	let errorRanges = [];
-	let errorMessages = [];
+
+	let syntaxRanges = [];
+	let syntaxMessages = [];
 
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == INVALID_RULE) {
 			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-			errorMessages.push("Invalid Rule.")
+			syntaxRanges.push(range);
+			syntaxMessages.push("Invalid Rule.")
 		}
 	}
+
+	let errorRanges = [];
+	let errorMessages = [];
 
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == INVALID_RULE) {
@@ -794,6 +800,10 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	}
 
 	if (disableFeatures) {
+		if(syntax == "true"){
+			syntaxRanges = [];
+			syntaxMessages = [];
+		}
 		if (orderErrors == "true") {
 			errorRanges = [];
 			errorMessages = [];
@@ -812,7 +822,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
-	return [errorRanges.concat(predicateErrorRanges), errorMessages.concat(predicateErrorMessages), predicateRanges, predicateMessages, warningRangesFinal, warningMessages];
+	return [syntaxRanges.concat(errorRanges.concat(predicateErrorRanges)), syntaxMessages.concat(errorMessages.concat(predicateErrorMessages)), predicateRanges, predicateMessages, warningRangesFinal, warningMessages];
 }
 
 module.exports = { loadErrors }

@@ -5,6 +5,7 @@
     "author": "John Doe",
     "additionalFiles": [],
     "disableFeatures":{
+        "syntaxChecking":"false",
         "orderErrors":"false",
         "predicateErrors":"false",
         "hoverPredicates":"false",
