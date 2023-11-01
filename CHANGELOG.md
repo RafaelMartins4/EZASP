@@ -25,3 +25,6 @@ Inicial release with:
 
 ## 1.0.5
 - Added patch notes `CHANGELOG.md` file.
+
+## 1.0.6
+- Added the ability to disable syntax checking
