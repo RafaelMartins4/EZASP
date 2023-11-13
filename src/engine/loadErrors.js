@@ -272,7 +272,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			if (isDefinition)
 				errorMessages.push("Error, this block of constraints is in between a block of other rules.")
 			else
-				errorMessages.push("Error, all constraints must be between definitions and show statements.")
+				errorMessages.push("Error, all constraints must be between definitions and either optimization or show statements.")
 		}
 	}
 

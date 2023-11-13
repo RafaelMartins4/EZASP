@@ -32,3 +32,7 @@ Inicial release with:
 ## 1.0.7
 - Updated `README.md`;
 - Added support to optimization statements.
+
+## 1.0.8
+- Fixed small bug where the operation "\" was not supported;
+- Fixed small bug with the order error messages, where the messages were not all updated with the newly added optimization statements.
