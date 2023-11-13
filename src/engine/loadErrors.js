@@ -1,5 +1,5 @@
 // @ts-ignore
-const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, COMMENT, getRuleType } = require('../parser/getRuleType');
+const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, COMMENT, getRuleType } = require('../parser/getRuleType');
 
 // @ts-ignore
 const { formatText } = require('../parser/formatText');
@@ -126,6 +126,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	*/
 
 
+	//invalid rules
+
 	let syntaxRanges = [];
 	let syntaxMessages = [];
 
@@ -145,6 +147,9 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			nonReductantRules.splice(i, 1);
 		}
 	}
+
+	//constants
+
 	let lastLineisConstant = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (lastLineisConstant && nonReductantRules[i][0] != CONSTANT) {
@@ -156,6 +161,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			errorMessages.push("Error, all constants must be at the beginning.")
 		}
 	}
+
+	//facts
 
 	let lastLineisFact = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
@@ -181,6 +188,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				errorMessages.push("Error, all facts must be at the beginning, or between constants and choices.")
 		}
 	}
+
+	//choices
 
 	let lastLineisChoice = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
@@ -208,6 +217,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
+	//definitions
+
 	let lastLineisDefinition = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == CONSTANT) { }
@@ -234,6 +245,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				errorMessages.push("Error, all definitions must be between choices and constraints.")
 		}
 	}
+
+	//constraints
 
 	let lastLineisConstraint = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
@@ -263,6 +276,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
+	//all choice rules before constraints
+
 	let foundChoice = false;
 	let constraintsEnded = false;	
 	for(let i = 0; i < nonReductantRules.length && !constraintsEnded; i++){
@@ -286,6 +301,38 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
+	//optimization statements
+
+	let lastLineisOptimization = true;
+	for (let i = 0; i < nonReductantRules.length; i++) {
+		if (nonReductantRules[i][0] == CONSTANT) { }
+		else if (nonReductantRules[i][0] == FACT) { }
+		else if (nonReductantRules[i][0] == CHOICE) { }
+		else if (nonReductantRules[i][0] == DEFINITION) { }
+		else if (nonReductantRules[i][0] == CONSTRAINT) { }
+		else if (lastLineisOptimization && nonReductantRules[i][0] != OPTIMIZATION_STATEMENT) {
+			lastLineisOptimization = false;
+		}
+		if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT && !lastLineisOptimization) {
+			const range = lines[nonReductantRules[i][1]];
+			errorRanges.push(range);
+
+			let isOptimization = true;
+			let isConstraint = false;
+			for (let j = i - 1; j >= 0 && isOptimization; j--) {
+				if (nonReductantRules[j][0] != OPTIMIZATION_STATEMENT)
+					isOptimization = false;
+				if (nonReductantRules[j][0] == CONSTRAINT)
+					isConstraint = true;
+			}
+			if (isConstraint)
+				errorMessages.push("Error, this block of optimization statements is in between a block of other rules.")
+			else
+				errorMessages.push("Error, all optimization statements must be between definitions and show statements.")
+		}
+	}
+
+
 	let lastLineisShowStatement = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] == CONSTANT) { }
@@ -293,6 +340,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		else if (nonReductantRules[i][0] == CHOICE) { }
 		else if (nonReductantRules[i][0] == DEFINITION) { }
 		else if (nonReductantRules[i][0] == CONSTRAINT) { }
+		else if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT) { }
 		else if (lastLineisShowStatement && nonReductantRules[i][0] != SHOW_STATEMEMENT) {
 			lastLineisShowStatement = false;
 		}
@@ -305,13 +353,13 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			for (let j = i - 1; j >= 0 && isShow; j--) {
 				if (nonReductantRules[j][0] != SHOW_STATEMEMENT)
 					isShow = false;
-				if (nonReductantRules[j][0] == CONSTRAINT)
+				if (nonReductantRules[j][0] == OPTIMIZATION_STATEMENT)
 					isConstraint = true;
 			}
 			if (isConstraint)
 				errorMessages.push("Error, this block of show statements is in between a block of other rules.")
 			else
-				errorMessages.push("Error, all show statements must be after constraints.")
+				errorMessages.push("Error, all show statements must be after constraints or optimization statements.")
 		}
 	}
 

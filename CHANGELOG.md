@@ -27,4 +27,8 @@ Inicial release with:
 - Added patch notes `CHANGELOG.md` file.
 
 ## 1.0.6
-- Added the ability to disable syntax checking
+- Added the ability to disable syntax checking.
+
+## 1.0.7
+- Updated `README.md`;
+- Added support to optimization statements.

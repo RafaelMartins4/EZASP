@@ -25,7 +25,7 @@ When a rule contains any basic syntax issues within the scope of the rules admit
 
 ### Warnings about Order of Rules Errors
 
-Rules must appear in the following order: constants, facts, choices, definitions, constraints, and show statements. The extension checks this and highlights any out-of-order rules (red underline). Additionally, a hover message explains what the error is. 
+Rules must appear in the following order: constants, facts, choices, definitions, constraints, optimization statements and show statements. The extension checks this and highlights any out-of-order rules (red underline). Additionally, a hover message explains what the error is. 
 
 ![Screenshot](example_images/error_messages.png)
 
