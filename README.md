@@ -54,3 +54,7 @@ If desired, you can disable any of the previous features of this application. In
 ![Screenshot](example_images/command.png)
 
 ![Screenshot](example_images/disable.png)
+
+Issues/Suggestions 
+
+You can post your issues/suggestions on the [GitHub Page](https://github.com/rmr-henriques/ezasp). 
