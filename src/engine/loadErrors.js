@@ -605,6 +605,11 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let warningRanges = [];
 
+	function pushWarningRange(i){
+		if(nonReductantRules[i][0] != OPTIMIZATION_STATEMENT)
+			warningRanges.push(lines[nonReductantRules[i][1]])
+	}
+
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		let hasDefinedMessage = false;
 		if ((nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE) && !definitionMessages.has(JSON.stringify(predicates[i].head[0]))) {
@@ -613,8 +618,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			else {
 				if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
 					noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), [lines[nonReductantRules[i][1]].lineStart + 1]);
-				warningRanges.push(lines[nonReductantRules[i][1]])
-			}
+					pushWarningRange(i);
+				}
 			hasDefinedMessage = true;
 		}
 		else if (nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE) {
@@ -626,7 +631,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 					noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 				else
 					noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-				warningRanges.push(lines[nonReductantRules[i][1]])
+					pushWarningRange(i);
 			}
 			hasDefinedMessage = true;
 		}
@@ -644,23 +649,23 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), [lines[nonReductantRules[i][1]].lineStart + 1])
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								warningRanges.push(lines[nonReductantRules[i][1]])
-							}
+								pushWarningRange(i);
+								}
 						else if (!hasDefinedMessage) {
 							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
 								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
 									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								warningRanges.push(lines[nonReductantRules[i][1]])
-							}
+								pushWarningRange(i);
+								}
 							else {
 								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
 									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								warningRanges.push(lines[nonReductantRules[i][1]])
-							}
+								pushWarningRange(i);
+								}
 						}
 					}
 					else if (!tmp.split(':')[1].includes(predicate.name)) {
@@ -672,8 +677,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								warningRanges.push(lines[nonReductantRules[i][1]])
-							}
+								pushWarningRange(i);
+								}
 						else if (!hasDefinedMessage) {
 							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
 								calculateOnHoverMessage(i);
@@ -683,8 +688,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								warningRanges.push(lines[nonReductantRules[i][1]])
-							}
+								pushWarningRange(i);
+								}
 						}
 					}
 				}
