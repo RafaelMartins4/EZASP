@@ -1,5 +1,5 @@
 // @ts-ignore
-const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, COMMENT, getRuleType } = require('../parser/getRuleType');
+const { FACT, CHOICE, DEFINITION, CONSTRAINT, AGGREGATE, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, COMMENT, getRuleType } = require('../parser/getRuleType');
 
 // @ts-ignore
 const { formatText } = require('../parser/formatText');
@@ -152,6 +152,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisConstant = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
+		if (nonReductantRules[i][0] == AGGREGATE) { }
 		if (lastLineisConstant && nonReductantRules[i][0] != CONSTANT) {
 			lastLineisConstant = false;
 		}
@@ -166,7 +167,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisFact = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (lastLineisFact && nonReductantRules[i][0] != FACT) {
 			lastLineisFact = false;
 		}
@@ -193,7 +195,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisChoice = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
 		else if (lastLineisChoice && nonReductantRules[i][0] != CHOICE) {
 			lastLineisChoice = false;
@@ -211,7 +214,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 					isFact = true;
 			}
 			if (isFact)
-				errorMessages.push("Error, this block of choices is in between a block of other rules.")
+				errorMessages.push("Er5ror, this block of choices is in between a block of other rules.")
 			else
 				errorMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
 		}
@@ -221,7 +224,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisDefinition = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
 		else if (nonReductantRules[i][0] == CHOICE) { }
 		else if (lastLineisDefinition && nonReductantRules[i][0] != DEFINITION) {
@@ -250,7 +254,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisConstraint = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
 		else if (nonReductantRules[i][0] == CHOICE) { }
 		else if (nonReductantRules[i][0] == DEFINITION) { }
@@ -281,7 +286,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let foundChoice = false;
 	let constraintsEnded = false;	
 	for(let i = 0; i < nonReductantRules.length && !constraintsEnded; i++){
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
 		else if (nonReductantRules[i][0] == CHOICE) { 
 			foundChoice = true;
@@ -305,7 +311,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisOptimization = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
 		else if (nonReductantRules[i][0] == CHOICE) { }
 		else if (nonReductantRules[i][0] == DEFINITION) { }
@@ -335,7 +342,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let lastLineisShowStatement = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == CONSTANT) { }
+		if (nonReductantRules[i][0] == AGGREGATE) { }
+		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
 		else if (nonReductantRules[i][0] == CHOICE) { }
 		else if (nonReductantRules[i][0] == DEFINITION) { }

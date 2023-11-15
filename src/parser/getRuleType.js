@@ -7,6 +7,7 @@ const CONSTRAINT = 5;
 const SHOW_STATEMEMENT = 6;
 const CONSTANT = 7;
 const OPTIMIZATION_STATEMENT = 8;
+const AGGREGATE = 9;
 const INVALID_RULE = -1;
 
 /**
@@ -41,6 +42,8 @@ function getRuleType(rule) {
 		return OPTIMIZATION_STATEMENT;
 	if(rule.startsWith("#minimize") && rule[rule.length-2] == '}')	
 		return OPTIMIZATION_STATEMENT;
+	if((rule.includes("#sum") || rule.includes("#count")|| rule.includes("#min") || rule.includes("#max")) && rule.includes("{") && rule.includes("}"))
+		return AGGREGATE;
 	if(rule.startsWith("#"))
 		return INVALID_RULE;
 	else if (!rule.includes(':-') && !rule.includes('{') && !rule.includes('}') && rule[0].match(/[a-z]/)) {
@@ -91,4 +94,4 @@ function getRuleType(rule) {
 		return INVALID_RULE;
 }
 
-module.exports = { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, OPTIMIZATION_STATEMENT, SHOW_STATEMEMENT, CONSTANT, INVALID_RULE };
+module.exports = { getRuleType,AGGREGATE, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, OPTIMIZATION_STATEMENT, SHOW_STATEMEMENT, CONSTANT, INVALID_RULE };

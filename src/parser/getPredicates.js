@@ -14,7 +14,8 @@ function extractPredicatesAux(rule, ruleType) {
 
   for(let i = 0; i<matches.length; i++){
     const match = matches[i];
-    if(rule[rule.indexOf(match) - 1] == "#"){
+    const char = rule[rule.indexOf(match) - 1] ;
+    if(char == "#" || /^[A-Z]$/.test(char)){
       matches.splice(matches.indexOf(match), 1);
       i--;
     }

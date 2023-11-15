@@ -36,3 +36,10 @@ Inicial release with:
 ## 1.0.8
 - Fixed small bug where the operation "\" was not supported;
 - Fixed small bug with the order error messages, where the messages were not all updated with the newly added optimization statements.
+
+## 1.0.9
+- Fixed bug where optimization statemets would get a warning stating that a predicate was being defined.
+
+## 1.0.10
+- Fixed bug where aggregates' order was not being working properly (they can be defined everywhere without an error appearing).
+- Fixed bug where aggregates were defining predicates.
