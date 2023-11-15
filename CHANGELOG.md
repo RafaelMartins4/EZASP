@@ -41,5 +41,8 @@ Inicial release with:
 - Fixed bug where optimization statemets would get a warning stating that a predicate was being defined.
 
 ## 1.0.10
-- Fixed bug where aggregates' order was not being working properly (they can be defined everywhere without an error appearing).
+- Fixed bug where aggregates' order was not working properly (they can be defined everywhere without an error appearing).
 - Fixed bug where aggregates were defining predicates.
+
+## 1.0.11
+- Adjusted version 1.0.10 as bugs weren't totally fixed.

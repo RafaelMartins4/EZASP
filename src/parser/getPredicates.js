@@ -9,14 +9,22 @@ function extractPredicatesAux(rule, ruleType) {
 
   let matches = rule.match(predicatePattern);
 
+  const indexes = [];
+  let match;
+
+  while ((match = predicatePattern.exec(rule)) !== null) {
+    indexes.push(match.index);
+  }
+
   if (!matches)
-    matches = [];
+    matches = []; 
 
   for(let i = 0; i<matches.length; i++){
     const match = matches[i];
-    const char = rule[rule.indexOf(match) - 1] ;
+    const char = rule[indexes[i] - 1];
     if(char == "#" || /^[A-Z]$/.test(char)){
       matches.splice(matches.indexOf(match), 1);
+      indexes.splice(i,1);
       i--;
     }
   }
