@@ -339,6 +339,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
+	//show statements
 
 	let lastLineisShowStatement = true;
 	for (let i = 0; i < nonReductantRules.length; i++) {
@@ -414,6 +415,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 							undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
 					}
 				}
+				else if(predicate.name == "attr" && predicate.arguments == 4){}
 				else {
 					if (!arrayContainsObject(definedPredicates, predicate))
 						if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
