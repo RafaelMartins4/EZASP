@@ -46,3 +46,6 @@ Inicial release with:
 
 ## 1.0.11
 - Adjusted version 1.0.10 as bugs weren't totally fixed.
+
+## 1.0.12
+- Fixed bug where some show statements where appearing as invalid rules.
