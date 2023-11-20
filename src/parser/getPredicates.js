@@ -30,7 +30,7 @@ function extractPredicatesAux(rule, ruleType) {
   }
 
 
-  if (isShowStatement) {
+  if (isShowStatement && rule[rule.length-2].match(/[0-9]/)) {
     let split = rule.substring(rule.indexOf("show") + 4).split(",")
     if (!split || split[0] == "")
       split = rule.substring(rule.indexOf("show") + 4)
@@ -113,9 +113,11 @@ function extractPredicates(rule, ruleType) {
   for (const result of headResult)
     headPredicates.push(result);
 
+  if(tail != ""){
   const tailResult = extractPredicatesAux(tail,ruleType);
   for (const result of tailResult)
     tailPredicates.push(result);
+  }
 
   return { head: headPredicates, tail: tailPredicates }
 

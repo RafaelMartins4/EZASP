@@ -36,6 +36,10 @@ function getRuleType(rule) {
 		return INVALID_RULE;
 	if (rule.startsWith("#show") && rule[rule.length-2].match(/[0-9]/))
 		return SHOW_STATEMEMENT;
+	else if(rule.startsWith("#show") && getRuleType(rule.split("#show")[1]) == FACT)
+		return SHOW_STATEMEMENT;
+	else if(rule.startsWith("#show") && getRuleType(rule.split("#show")[1].split(":")[0]) == FACT && getRuleType(rule.split("#show")[1].split(":")[1]) == FACT)
+		return SHOW_STATEMEMENT
 	if(rule.startsWith("#const") && rule[rule.length-2].match(/[0-9]/))
 		return CONSTANT;
 	if(rule.startsWith("#maximize") && rule[rule.length-2] == '}')
