@@ -171,7 +171,9 @@ function activate(context) {
 
 	let fileName = activeEditor.document.fileName;
 
-	if(fileName.includes('.lp')){
+	if(fileName.includes('.lp') || fileName.includes('.cl') || fileName.includes('.clp') 
+	|| fileName.includes('.iclp') || fileName.includes('.Clp') || fileName.includes('.iClp')
+	|| fileName.includes('.blp') || fileName.includes('.iblp')){
 
 		let disposable = loadThings(activeEditor, fileName);
 		context.subscriptions.push(disposable);
@@ -188,8 +190,10 @@ function activate(context) {
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 
 			fileName = editor.document.fileName;
-
-			if(fileName.includes('.lp')){
+			
+			if(fileName.includes('.lp') || fileName.includes('.cl') || fileName.includes('.clp') 
+			|| fileName.includes('.iclp') || fileName.includes('.Clp') || fileName.includes('.iClp')
+			|| fileName.includes('.blp') || fileName.includes('.iblp')){
 				activeEditor = editor;
 				disposable.dispose();	
 				activeEditor.setDecorations(underlineRed,[]);

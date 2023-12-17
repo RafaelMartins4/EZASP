@@ -214,7 +214,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 					isFact = true;
 			}
 			if (isFact)
-				errorMessages.push("Er5ror, this block of choices is in between a block of other rules.")
+				errorMessages.push("Error, this block of choices is in between a block of other rules.")
 			else
 				errorMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
 		}
@@ -284,26 +284,26 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	//all choice rules before constraints
 
 	let foundChoice = false;
-	let constraintsEnded = false;	
-	for(let i = 0; i < nonReductantRules.length && !constraintsEnded; i++){
+	let constraintsEnded = false;
+	for (let i = 0; i < nonReductantRules.length && !constraintsEnded; i++) {
 		if (nonReductantRules[i][0] == AGGREGATE) { }
 		else if (nonReductantRules[i][0] == CONSTANT) { }
 		else if (nonReductantRules[i][0] == FACT) { }
-		else if (nonReductantRules[i][0] == CHOICE) { 
+		else if (nonReductantRules[i][0] == CHOICE) {
 			foundChoice = true;
 		}
 		else if (nonReductantRules[i][0] == DEFINITION) { }
-		else if(nonReductantRules[i][0] == CONSTRAINT && !foundChoice){
-			for(let j = i; j<nonReductantRules.length && !constraintsEnded; j++){
-				if(nonReductantRules[j][0] != CONSTRAINT){
+		else if (nonReductantRules[i][0] == CONSTRAINT && !foundChoice) {
+			for (let j = i; j < nonReductantRules.length && !constraintsEnded; j++) {
+				if (nonReductantRules[j][0] != CONSTRAINT) {
 					constraintsEnded = true;
 				}
-				else{
+				else {
 					const range = lines[nonReductantRules[j][1]];
-					errorRanges.push(range); 	
+					errorRanges.push(range);
 					errorMessages.push("Error, constraints must be preceded by choice rules.")
 				}
-			}	
+			}
 		}
 	}
 
@@ -415,7 +415,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 							undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
 					}
 				}
-				else if(predicate.name == "attr" && predicate.arguments == 4){}
+				else if (predicate.name == "attr" && predicate.arguments == 4) { }
 				else {
 					if (!arrayContainsObject(definedPredicates, predicate))
 						if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
@@ -514,7 +514,6 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				definitionMessages.set(JSON.stringify(predicates[i].head[0]), [formattedText[nonReductantRules[i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + name + ": line " + (lines[nonReductantRules[i][1]].lineStart + 1) + ")."])
 			else
 				definitionMessages.get(JSON.stringify(predicates[i].head[0])).push(formattedText[nonReductantRules[i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + name + ": line " + (lines[nonReductantRules[i][1]].lineStart + 1) + ").")
-
 	}
 
 
@@ -523,7 +522,6 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			definitionMessages.set(JSON.stringify(extraPredicates[j][i].head[0]), [extraFormattedText[j][extraNonReductantRules[j][i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + extraTextRaw[0][j] + ": line " + (extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1) + ")."])
 		else
 			definitionMessages.get(JSON.stringify(extraPredicates[j][i].head[0])).push(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + extraTextRaw[0][j] + ": line " + (extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1) + ").")
-
 	}
 
 
@@ -615,8 +613,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let warningRanges = [];
 
-	function pushWarningRange(i){
-		if(nonReductantRules[i][0] != OPTIMIZATION_STATEMENT)
+	function pushWarningRange(i) {
+		if (nonReductantRules[i][0] != OPTIMIZATION_STATEMENT)
 			warningRanges.push(lines[nonReductantRules[i][1]])
 	}
 
@@ -628,8 +626,8 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			else {
 				if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
 					noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), [lines[nonReductantRules[i][1]].lineStart + 1]);
-					pushWarningRange(i);
-				}
+				pushWarningRange(i);
+			}
 			hasDefinedMessage = true;
 		}
 		else if (nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE) {
@@ -641,7 +639,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 					noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 				else
 					noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-					pushWarningRange(i);
+				pushWarningRange(i);
 			}
 			hasDefinedMessage = true;
 		}
@@ -660,7 +658,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
 								pushWarningRange(i);
-								}
+							}
 						else if (!hasDefinedMessage) {
 							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
 								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
@@ -668,14 +666,14 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
 								pushWarningRange(i);
-								}
+							}
 							else {
 								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
 									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
 								pushWarningRange(i);
-								}
+							}
 						}
 					}
 					else if (!tmp.split(':')[1].includes(predicate.name)) {
@@ -688,7 +686,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
 								pushWarningRange(i);
-								}
+							}
 						else if (!hasDefinedMessage) {
 							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
 								calculateOnHoverMessage(i);
@@ -699,7 +697,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 								else
 									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
 								pushWarningRange(i);
-								}
+							}
 						}
 					}
 				}
@@ -707,15 +705,15 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
-	for(const key of  [...definitionMessages.keys()]){
+	for (const key of [...definitionMessages.keys()]) {
 		const checker = [];
 		const array = definitionMessages.get(key);
 
-		for(const message of array)
-			if(!checker.includes(message))
+		for (const message of array)
+			if (!checker.includes(message))
 				checker.push(message)
 
-		definitionMessages.set(key,checker);
+		definitionMessages.set(key, checker);
 	}
 
 	const noCommentLinesKeys = [...noCommentLines.keys()];
@@ -847,15 +845,15 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	const checker = [];
 
-	for(const range of warningRanges){
+	for (const range of warningRanges) {
 		const tmp = JSON.stringify(range);
-		if(!checker.includes(JSON.stringify(range)))
+		if (!checker.includes(JSON.stringify(range)))
 			checker.push(tmp)
 	}
 
 	let warningRangesFinal = [];
 
-	for(const range of checker)
+	for (const range of checker)
 		warningRangesFinal.push(JSON.parse(range))
 
 	for (const range of warningRangesFinal) {
@@ -863,7 +861,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	}
 
 	if (disableFeatures) {
-		if(syntax == "true"){
+		if (syntax == "true") {
 			syntaxRanges = [];
 			syntaxMessages = [];
 		}

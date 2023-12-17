@@ -53,3 +53,7 @@ Inicial release with:
 ## 1.1.0
 - Closed all previous bugs;
 - Removed the predicate validation error message shown specifically when used the predicate attr/4 in show statements, to help support the usage of clingraph (see `https://github.com/potassco/clingraph`).
+
+## 1.1.1
+- Fixed small bug in order error messages;
+- Added support for all file extensions that the Answer Set Programming Language Support works in, in contrast to just ".lp".
