@@ -32,14 +32,14 @@ function getRuleType(rule) {
 		return COMMENT;
 	else if (rule.includes('%'))
 		rule = rule.split('%')[0].trim();
-	else if(!rule.match(/^[a-zA-Z0-9_#+\-/*:{}(),.%|<>=;!\\@]+$/ ))
+	else if(!rule.match(/^[a-zA-Z0-9_#+\-/*":{}(),.%|<>=;!\\@]+$/ ))
 		return INVALID_RULE;
 	if (rule.startsWith("#show") && rule[rule.length-2].match(/[0-9]/))
 		return SHOW_STATEMEMENT;
 	else if(rule.startsWith("#show") && getRuleType(rule.split("#show")[1]) == FACT)
 		return SHOW_STATEMEMENT;
 	else if(rule.startsWith("#show") && getRuleType(rule.split("#show")[1].split(":")[0]) == FACT && getRuleType(rule.split("#show")[1].split(":")[1]) == FACT)
-		return SHOW_STATEMEMENT
+		return SHOW_STATEMEMENT;
 	if(rule.startsWith("#const") && rule[rule.length-2].match(/[0-9]/))
 		return CONSTANT;
 	if(rule.startsWith("#maximize") && rule[rule.length-2] == '}')
@@ -60,15 +60,14 @@ function getRuleType(rule) {
 		}
 		if (a != 0)
 			return INVALID_RULE;
-
-		if (rule[rule.length - 2].match(/[a-zA-Z]/) || rule[rule.length - 2].match(/[0-9]/))
+		if (rule[rule.length - 2].match(/[a-zA-Z"]/) || rule[rule.length - 2].match(/[0-9"]/))
 			return FACT;
 		else if(rule[rule.length-3] == '(' && rule[rule.length-2] == ')')
 			return FACT;
 		else {
 			for (let i = rule.length-2; i > 0; i--)
 				if (rule[i] != ')')
-					if (rule[i].match(/[a-zA-Z]/) || rule[i].match(/[0-9]/))
+					if (rule[i].match(/[a-zA-Z"]/) || rule[i].match(/[0-9"]/))
 						return FACT;
 					else
 						return INVALID_RULE;
@@ -98,4 +97,4 @@ function getRuleType(rule) {
 		return INVALID_RULE;
 }
 
-module.exports = { getRuleType,AGGREGATE, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, OPTIMIZATION_STATEMENT, SHOW_STATEMEMENT, CONSTANT, INVALID_RULE };
+module.exports = {getRuleType, AGGREGATE, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, OPTIMIZATION_STATEMENT, SHOW_STATEMEMENT, CONSTANT, INVALID_RULE };

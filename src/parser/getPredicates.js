@@ -3,7 +3,7 @@ const { COMMENT, EMPTY, SHOW_STATEMEMENT, getRuleType, INVALID_RULE } = require(
 function extractPredicatesAux(rule, ruleType) {
 
   const predicates = [];
-  const predicatePattern = /([a-z][a-zA-Z0-9_]*)\s*(?:\(([^)]*)\))?/g;
+  const predicatePattern = /([a-z][a-zA-Z0-9_"]*)\s*(?:\(([^)]*)\))?/g;
 
   const isShowStatement = ruleType == SHOW_STATEMEMENT;
 

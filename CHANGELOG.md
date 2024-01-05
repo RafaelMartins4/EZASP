@@ -57,3 +57,7 @@ Inicial release with:
 ## 1.1.1
 - Fixed small bug in order error messages;
 - Added support for all file extensions that the Answer Set Programming Language Support works in, in contrast to just ".lp".
+
+## 1.1.2
+- Fixed bug where predicates in aggregates where not being accepted;
+- Added support for atoms containing strings separated by '""', for example, a("word").

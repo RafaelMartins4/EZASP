@@ -398,10 +398,17 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	for (let i = 0; i < nonReductantRules.length; i++) {
 		if (nonReductantRules[i][0] != INVALID_RULE) {
 			for (const predicate of predicates[i].head) {
-				const tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
+				let tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
 				if (nonReductantRules[i][0] != SHOW_STATEMEMENT) {
-					if (!tmp.includes(':')) {
+					if (!tmp.includes(':') && nonReductantRules[i][0] != AGGREGATE) {
 						definedPredicates.push(predicate)
+					}
+					else if(nonReductantRules[i][0] == AGGREGATE){
+						if (!arrayContainsObject(definedPredicates, predicate))
+							if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
+								undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
+							else
+								undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
 					}
 					else if (!tmp.split(':')[1].includes(predicate.name)) {
 						definedPredicates.push(predicate)
