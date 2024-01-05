@@ -401,16 +401,35 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				let tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
 				if (nonReductantRules[i][0] != SHOW_STATEMEMENT) {
 					if (!tmp.includes(':') && nonReductantRules[i][0] != AGGREGATE) {
-						definedPredicates.push(predicate)
+						let a = formattedText[nonReductantRules[i][1]].indexOf('{');
+						let b = formattedText[nonReductantRules[i][1]].indexOf(predicate.name);
+						let c = formattedText[nonReductantRules[i][1]].indexOf('}');
+						if(!(a != -1 && c != -1 && a<b && b<c) && nonReductantRules[i][0] == CHOICE){
+							if (!arrayContainsObject(definedPredicates, predicate))
+								if (undefinedPredicates.has(lines[nonReductantRules[i][1]]) && !arrayContainsObject(undefinedPredicates.get(lines[nonReductantRules[i][1]]), predicate))
+										undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
+									else
+										undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
+						}
+						else	
+							definedPredicates.push(predicate)
 					}
 					else if(nonReductantRules[i][0] == AGGREGATE){
-						if (!arrayContainsObject(definedPredicates, predicate))
-							if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
-								undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-							else
-								undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
+						if(formattedText[nonReductantRules[i][1]].indexOf('}') > formattedText[nonReductantRules[i][1]].indexOf(predicate.name)){
+							if (!arrayContainsObject(definedPredicates, predicate))
+								if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
+									undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
+								else
+									undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
+						}
+						else
+							definedPredicates.push(predicate)
+
 					}
 					else if (!tmp.split(':')[1].includes(predicate.name)) {
+						definedPredicates.push(predicate)
+					}
+					else if (tmp.split(':')[0].includes(predicate.name)) {
 						definedPredicates.push(predicate)
 					}
 					else if (!arrayContainsObject(definedPredicates, predicate)) {

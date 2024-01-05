@@ -61,3 +61,7 @@ Inicial release with:
 ## 1.1.2
 - Fixed bug where predicates in aggregates where not being accepted;
 - Added support for atoms containing strings separated by '""', for example, a("word").
+
+## 1.1.3
+- Fixed bug where non-defined predicates in cardinality rules where not being detected;
+- Fixed a small bug where problems with predicates with the same name and different number of arguments where not being detected.
