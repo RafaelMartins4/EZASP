@@ -65,3 +65,7 @@ Inicial release with:
 ## 1.1.3
 - Fixed bug where non-defined predicates in cardinality rules where not being detected;
 - Fixed a small bug where problems with predicates with the same name and different number of arguments where not being detected.
+
+## 1.1.4
+- Changed logic around aggregates, now most aggregates bugs are fixed;
+- Improved logic to rule and syntax errors detection.

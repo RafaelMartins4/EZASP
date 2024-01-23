@@ -29,7 +29,6 @@ function extractPredicatesAux(rule, ruleType) {
     }
   }
 
-
   if (isShowStatement && rule[rule.length-2].match(/[0-9]/)) {
     let split = rule.substring(rule.indexOf("show") + 4).split(",")
     if (!split || split[0] == "")

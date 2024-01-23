@@ -1,9 +1,10 @@
 // @ts-ignore
-const { FACT, CHOICE, DEFINITION, CONSTRAINT, AGGREGATE, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, COMMENT, getRuleType } = require('../parser/getRuleType');
+const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, COMMENT, getRuleType } = require('../parser/getRuleType');
 
 // @ts-ignore
 const { formatText } = require('../parser/formatText');
 const { getPredicates } = require('../parser/getPredicates');
+const { hasMagic } = require('glob');
 
 const MAC_OS = 1;
 const WINDOWS = 2;
@@ -54,6 +55,10 @@ function getPredicatesRanges(predicate, line, start) {
 	}
 
 	return results;
+}
+
+function containtsAggregate(rule){
+	return (rule.includes("#sum") || rule.includes("#count") || rule.includes("#min") || rule.includes("#max")) && rule.includes("{") && rule.includes("}")
 }
 
 /**
@@ -131,247 +136,244 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let syntaxRanges = [];
 	let syntaxMessages = [];
 
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == INVALID_RULE) {
-			const range = lines[nonReductantRules[i][1]];
-			syntaxRanges.push(range);
-			syntaxMessages.push("Invalid Rule.")
+	if (syntax != "true") {
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == INVALID_RULE) {
+				const range = lines[nonReductantRules[i][1]];
+				syntaxRanges.push(range);
+				syntaxMessages.push("Invalid Rule.")
+			}
 		}
 	}
 
 	let errorRanges = [];
 	let errorMessages = [];
 
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == INVALID_RULE) {
-			nonReductantRules.splice(i, 1);
-		}
-	}
+	if (orderErrors != "true") {
 
-	//constants
-
-	let lastLineisConstant = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		if (lastLineisConstant && nonReductantRules[i][0] != CONSTANT) {
-			lastLineisConstant = false;
-		}
-		if (nonReductantRules[i][0] == CONSTANT && !lastLineisConstant) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-			errorMessages.push("Error, all constants must be at the beginning.")
-		}
-	}
-
-	//facts
-
-	let lastLineisFact = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (lastLineisFact && nonReductantRules[i][0] != FACT) {
-			lastLineisFact = false;
-		}
-		if (nonReductantRules[i][0] == FACT && !lastLineisFact) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-
-			let isFact = true;
-			let isConstant = false;
-			for (let j = i - 1; j >= 0 && isFact; j--) {
-				if (nonReductantRules[j][0] != FACT)
-					isFact = false;
-				if (nonReductantRules[j][0] == CONSTANT)
-					isConstant = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == INVALID_RULE) {
+				nonReductantRules.splice(i, 1);
 			}
-			if (isConstant)
-				errorMessages.push("Error, this block of facts is in between a block of other rules.")
-			else
-				errorMessages.push("Error, all facts must be at the beginning, or between constants and choices.")
 		}
-	}
 
-	//choices
+		//constants
 
-	let lastLineisChoice = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (nonReductantRules[i][0] == FACT) { }
-		else if (lastLineisChoice && nonReductantRules[i][0] != CHOICE) {
-			lastLineisChoice = false;
-		}
-		if (nonReductantRules[i][0] == CHOICE && !lastLineisChoice) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-
-			let isChoice = true;
-			let isFact = false;
-			for (let j = i - 1; j >= 0 && isChoice; j--) {
-				if (nonReductantRules[j][0] != CHOICE)
-					isChoice = false;
-				if (nonReductantRules[j][0] == FACT)
-					isFact = true;
+		let lastLineisConstant = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (lastLineisConstant && nonReductantRules[i][0] != CONSTANT) {
+				lastLineisConstant = false;
 			}
-			if (isFact)
-				errorMessages.push("Error, this block of choices is in between a block of other rules.")
-			else
-				errorMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
-		}
-	}
-
-	//definitions
-
-	let lastLineisDefinition = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (nonReductantRules[i][0] == FACT) { }
-		else if (nonReductantRules[i][0] == CHOICE) { }
-		else if (lastLineisDefinition && nonReductantRules[i][0] != DEFINITION) {
-			lastLineisDefinition = false;
-		}
-		if (nonReductantRules[i][0] == DEFINITION && !lastLineisDefinition) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-
-			let isDefinition = true;
-			let isChoice = false;
-			for (let j = i - 1; j >= 0 && isDefinition; j--) {
-				if (nonReductantRules[j][0] != DEFINITION)
-					isDefinition = false;
-				if (nonReductantRules[j][0] == CHOICE)
-					isChoice = true;
+			if (nonReductantRules[i][0] == CONSTANT && !lastLineisConstant) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
+				errorMessages.push("Error, all constants must be at the beginning.")
 			}
-			if (isChoice)
-				errorMessages.push("Error, this block of definitions is in between a block of other rules.")
-			else
-				errorMessages.push("Error, all definitions must be between choices and constraints.")
 		}
-	}
 
-	//constraints
+		//facts
 
-	let lastLineisConstraint = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (nonReductantRules[i][0] == FACT) { }
-		else if (nonReductantRules[i][0] == CHOICE) { }
-		else if (nonReductantRules[i][0] == DEFINITION) { }
-		else if (lastLineisConstraint && nonReductantRules[i][0] != CONSTRAINT) {
-			lastLineisConstraint = false;
-		}
-		if (nonReductantRules[i][0] == CONSTRAINT && !lastLineisConstraint) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-
-			let isConstraint = true;
-			let isDefinition = false;
-			for (let j = i - 1; j >= 0 && isConstraint; j--) {
-				if (nonReductantRules[j][0] != CONSTRAINT)
-					isConstraint = false;
-				if (nonReductantRules[j][0] == DEFINITION)
-					isDefinition = true;
+		let lastLineisFact = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (lastLineisFact && nonReductantRules[i][0] != FACT) {
+				lastLineisFact = false;
 			}
-			if (isDefinition)
-				errorMessages.push("Error, this block of constraints is in between a block of other rules.")
-			else
-				errorMessages.push("Error, all constraints must be between definitions and either optimization or show statements.")
-		}
-	}
+			if (nonReductantRules[i][0] == FACT && !lastLineisFact) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
 
-	//all choice rules before constraints
-
-	let foundChoice = false;
-	let constraintsEnded = false;
-	for (let i = 0; i < nonReductantRules.length && !constraintsEnded; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (nonReductantRules[i][0] == FACT) { }
-		else if (nonReductantRules[i][0] == CHOICE) {
-			foundChoice = true;
-		}
-		else if (nonReductantRules[i][0] == DEFINITION) { }
-		else if (nonReductantRules[i][0] == CONSTRAINT && !foundChoice) {
-			for (let j = i; j < nonReductantRules.length && !constraintsEnded; j++) {
-				if (nonReductantRules[j][0] != CONSTRAINT) {
-					constraintsEnded = true;
+				let isFact = true;
+				let isConstant = false;
+				for (let j = i - 1; j >= 0 && isFact; j--) {
+					if (nonReductantRules[j][0] != FACT)
+						isFact = false;
+					if (nonReductantRules[j][0] == CONSTANT)
+						isConstant = true;
 				}
-				else {
-					const range = lines[nonReductantRules[j][1]];
-					errorRanges.push(range);
-					errorMessages.push("Error, constraints must be preceded by choice rules.")
+				if (isConstant)
+					errorMessages.push("Error, this block of facts is in between a block of other rules.")
+				else
+					errorMessages.push("Error, all facts must be at the beginning, or between constants and choices.")
+			}
+		}
+
+		//choices
+
+		let lastLineisChoice = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (nonReductantRules[i][0] == FACT) { }
+			else if (lastLineisChoice && nonReductantRules[i][0] != CHOICE) {
+				lastLineisChoice = false;
+			}
+			if (nonReductantRules[i][0] == CHOICE && !lastLineisChoice) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
+
+				let isChoice = true;
+				let isFact = false;
+				for (let j = i - 1; j >= 0 && isChoice; j--) {
+					if (nonReductantRules[j][0] != CHOICE)
+						isChoice = false;
+					if (nonReductantRules[j][0] == FACT)
+						isFact = true;
+				}
+				if (isFact)
+					errorMessages.push("Error, this block of choices is in between a block of other rules.")
+				else
+					errorMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
+			}
+		}
+
+		//definitions
+
+		let lastLineisDefinition = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (nonReductantRules[i][0] == FACT) { }
+			else if (nonReductantRules[i][0] == CHOICE) { }
+			else if (lastLineisDefinition && nonReductantRules[i][0] != DEFINITION) {
+				lastLineisDefinition = false;
+			}
+			if (nonReductantRules[i][0] == DEFINITION && !lastLineisDefinition) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
+
+				let isDefinition = true;
+				let isChoice = false;
+				for (let j = i - 1; j >= 0 && isDefinition; j--) {
+					if (nonReductantRules[j][0] != DEFINITION)
+						isDefinition = false;
+					if (nonReductantRules[j][0] == CHOICE)
+						isChoice = true;
+				}
+				if (isChoice)
+					errorMessages.push("Error, this block of definitions is in between a block of other rules.")
+				else
+					errorMessages.push("Error, all definitions must be between choices and constraints.")
+			}
+		}
+
+		//constraints
+
+		let lastLineisConstraint = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (nonReductantRules[i][0] == FACT) { }
+			else if (nonReductantRules[i][0] == CHOICE) { }
+			else if (nonReductantRules[i][0] == DEFINITION) { }
+			else if (lastLineisConstraint && nonReductantRules[i][0] != CONSTRAINT) {
+				lastLineisConstraint = false;
+			}
+			if (nonReductantRules[i][0] == CONSTRAINT && !lastLineisConstraint) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
+
+				let isConstraint = true;
+				let isDefinition = false;
+				for (let j = i - 1; j >= 0 && isConstraint; j--) {
+					if (nonReductantRules[j][0] != CONSTRAINT)
+						isConstraint = false;
+					if (nonReductantRules[j][0] == DEFINITION)
+						isDefinition = true;
+				}
+				if (isDefinition)
+					errorMessages.push("Error, this block of constraints is in between a block of other rules.")
+				else
+					errorMessages.push("Error, all constraints must be between definitions and either optimization or show statements.")
+			}
+		}
+
+		//all choice rules before constraints
+
+		let foundChoice = false;
+		let constraintsEnded = false;
+		for (let i = 0; i < nonReductantRules.length && !constraintsEnded; i++) {
+		    if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (nonReductantRules[i][0] == FACT) { }
+			else if (nonReductantRules[i][0] == CHOICE) {
+				foundChoice = true;
+			}
+			else if (nonReductantRules[i][0] == DEFINITION) { }
+			else if (nonReductantRules[i][0] == CONSTRAINT && !foundChoice) {
+				for (let j = i; j < nonReductantRules.length && !constraintsEnded; j++) {
+					if (nonReductantRules[j][0] != CONSTRAINT) {
+						constraintsEnded = true;
+					}
+					else {
+						const range = lines[nonReductantRules[j][1]];
+						errorRanges.push(range);
+						errorMessages.push("Error, constraints must be preceded by choice rules.")
+					}
 				}
 			}
 		}
-	}
 
-	//optimization statements
+		//optimization statements
 
-	let lastLineisOptimization = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (nonReductantRules[i][0] == FACT) { }
-		else if (nonReductantRules[i][0] == CHOICE) { }
-		else if (nonReductantRules[i][0] == DEFINITION) { }
-		else if (nonReductantRules[i][0] == CONSTRAINT) { }
-		else if (lastLineisOptimization && nonReductantRules[i][0] != OPTIMIZATION_STATEMENT) {
-			lastLineisOptimization = false;
-		}
-		if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT && !lastLineisOptimization) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-
-			let isOptimization = true;
-			let isConstraint = false;
-			for (let j = i - 1; j >= 0 && isOptimization; j--) {
-				if (nonReductantRules[j][0] != OPTIMIZATION_STATEMENT)
-					isOptimization = false;
-				if (nonReductantRules[j][0] == CONSTRAINT)
-					isConstraint = true;
+		let lastLineisOptimization = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (nonReductantRules[i][0] == FACT) { }
+			else if (nonReductantRules[i][0] == CHOICE) { }
+			else if (nonReductantRules[i][0] == DEFINITION) { }
+			else if (nonReductantRules[i][0] == CONSTRAINT) { }
+			else if (lastLineisOptimization && nonReductantRules[i][0] != OPTIMIZATION_STATEMENT) {
+				lastLineisOptimization = false;
 			}
-			if (isConstraint)
-				errorMessages.push("Error, this block of optimization statements is in between a block of other rules.")
-			else
-				errorMessages.push("Error, all optimization statements must be between definitions and show statements.")
-		}
-	}
+			if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT && !lastLineisOptimization) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
 
-	//show statements
-
-	let lastLineisShowStatement = true;
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] == AGGREGATE) { }
-		else if (nonReductantRules[i][0] == CONSTANT) { }
-		else if (nonReductantRules[i][0] == FACT) { }
-		else if (nonReductantRules[i][0] == CHOICE) { }
-		else if (nonReductantRules[i][0] == DEFINITION) { }
-		else if (nonReductantRules[i][0] == CONSTRAINT) { }
-		else if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT) { }
-		else if (lastLineisShowStatement && nonReductantRules[i][0] != SHOW_STATEMEMENT) {
-			lastLineisShowStatement = false;
-		}
-		if (nonReductantRules[i][0] == SHOW_STATEMEMENT && !lastLineisShowStatement) {
-			const range = lines[nonReductantRules[i][1]];
-			errorRanges.push(range);
-
-			let isShow = true;
-			let isConstraint = false;
-			for (let j = i - 1; j >= 0 && isShow; j--) {
-				if (nonReductantRules[j][0] != SHOW_STATEMEMENT)
-					isShow = false;
-				if (nonReductantRules[j][0] == OPTIMIZATION_STATEMENT)
-					isConstraint = true;
+				let isOptimization = true;
+				let isConstraint = false;
+				for (let j = i - 1; j >= 0 && isOptimization; j--) {
+					if (nonReductantRules[j][0] != OPTIMIZATION_STATEMENT)
+						isOptimization = false;
+					if (nonReductantRules[j][0] == CONSTRAINT)
+						isConstraint = true;
+				}
+				if (isConstraint)
+					errorMessages.push("Error, this block of optimization statements is in between a block of other rules.")
+				else
+					errorMessages.push("Error, all optimization statements must be between definitions and show statements.")
 			}
-			if (isConstraint)
-				errorMessages.push("Error, this block of show statements is in between a block of other rules.")
-			else
-				errorMessages.push("Error, all show statements must be after constraints or optimization statements.")
 		}
-	}
 
+		//show statements
+
+		let lastLineisShowStatement = true;
+		for (let i = 0; i < nonReductantRules.length; i++) {
+			if (nonReductantRules[i][0] == CONSTANT) { }
+			else if (nonReductantRules[i][0] == FACT) { }
+			else if (nonReductantRules[i][0] == CHOICE) { }
+			else if (nonReductantRules[i][0] == DEFINITION) { }
+			else if (nonReductantRules[i][0] == CONSTRAINT) { }
+			else if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT) { }
+			else if (lastLineisShowStatement && nonReductantRules[i][0] != SHOW_STATEMEMENT) {
+				lastLineisShowStatement = false;
+			}
+			if (nonReductantRules[i][0] == SHOW_STATEMEMENT && !lastLineisShowStatement) {
+				const range = lines[nonReductantRules[i][1]];
+				errorRanges.push(range);
+
+				let isShow = true;
+				let isConstraint = false;
+				for (let j = i - 1; j >= 0 && isShow; j--) {
+					if (nonReductantRules[j][0] != SHOW_STATEMEMENT)
+						isShow = false;
+					if (nonReductantRules[j][0] == OPTIMIZATION_STATEMENT)
+						isConstraint = true;
+				}
+				if (isConstraint)
+					errorMessages.push("Error, this block of show statements is in between a block of other rules.")
+				else
+					errorMessages.push("Error, all show statements must be after constraints or optimization statements.")
+			}
+		}
+
+	}
 	/*
 	* ---------- CALCULATE DEFINITION ERRORS ----------
 	*/
@@ -400,22 +402,22 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			for (const predicate of predicates[i].head) {
 				let tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
 				if (nonReductantRules[i][0] != SHOW_STATEMEMENT) {
-					if (!tmp.includes(':') && nonReductantRules[i][0] != AGGREGATE) {
+					if (!tmp.includes(':') && !containtsAggregate(tmp)) {
 						let a = formattedText[nonReductantRules[i][1]].indexOf('{');
 						let b = formattedText[nonReductantRules[i][1]].indexOf(predicate.name);
 						let c = formattedText[nonReductantRules[i][1]].indexOf('}');
-						if(!(a != -1 && c != -1 && a<b && b<c) && nonReductantRules[i][0] == CHOICE){
+						if (!(a != -1 && c != -1 && a < b && b < c) && nonReductantRules[i][0] == CHOICE) {
 							if (!arrayContainsObject(definedPredicates, predicate))
 								if (undefinedPredicates.has(lines[nonReductantRules[i][1]]) && !arrayContainsObject(undefinedPredicates.get(lines[nonReductantRules[i][1]]), predicate))
-										undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-									else
-										undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
+									undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
+								else
+									undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
 						}
-						else	
+						else
 							definedPredicates.push(predicate)
 					}
-					else if(nonReductantRules[i][0] == AGGREGATE){
-						if(formattedText[nonReductantRules[i][1]].indexOf('}') > formattedText[nonReductantRules[i][1]].indexOf(predicate.name)){
+					else if (containtsAggregate(formattedText[nonReductantRules[i][1]])) {
+						if (formattedText[nonReductantRules[i][1]].indexOf('}') > formattedText[nonReductantRules[i][1]].indexOf(predicate.name)) {
 							if (!arrayContainsObject(definedPredicates, predicate))
 								if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
 									undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
@@ -424,7 +426,6 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						}
 						else
 							definedPredicates.push(predicate)
-
 					}
 					else if (!tmp.split(':')[1].includes(predicate.name)) {
 						definedPredicates.push(predicate)
@@ -467,40 +468,44 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let predicateErrorRanges = [];
 	let predicateErrorMessages = [];
 
-	for (const key of undefinedPredicates.keys()) {
-		predicateErrorRanges.push(key);
+	if (predicateErrors == "true") {
 
-		const predicates = undefinedPredicates.get(key);
+		for (const key of undefinedPredicates.keys()) {
+			predicateErrorRanges.push(key);
 
-		if (predicates.length == 1)
-			predicateErrorMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
+			const predicates = undefinedPredicates.get(key);
 
-		else {
-			let names = "";
-			for (let j = 0; j < predicates.length; j++)
-				if (j == 0)
-					names = names + " " + predicates[j].name + "/" + predicates[j].arguments;
+			if (predicates.length == 1)
+				predicateErrorMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
 
-				else if (j == predicates.length - 1)
-					names = names + " and " + predicates[j].name + "/" + predicates[j].arguments;
-				else
-					names = names + ", " + predicates[j].name + "/" + predicates[j].arguments;
+			else {
+				let names = "";
+				for (let j = 0; j < predicates.length; j++)
+					if (j == 0)
+						names = names + " " + predicates[j].name + "/" + predicates[j].arguments;
 
-			predicateErrorMessages.push("Error, predicates" + names + " are not defined yet.")
+					else if (j == predicates.length - 1)
+						names = names + " and " + predicates[j].name + "/" + predicates[j].arguments;
+					else
+						names = names + ", " + predicates[j].name + "/" + predicates[j].arguments;
+
+				predicateErrorMessages.push("Error, predicates" + names + " are not defined yet.")
+			}
 		}
-	}
 
-	const seen = new Set();
-	for (let i = 0; i < errorRanges.length; i++) {
-		if (!seen.has(errorRanges[i]))
-			seen.add(errorRanges[i]);
-		else {
-			const index = errorRanges.indexOf(errorRanges[i]);
-			errorMessages[index] = errorMessages[index] + " " + errorMessages[i];
-			errorRanges.splice(i, 1);
-			errorMessages.splice(i, 1);
-			i--;
+		const seen = new Set();
+		for (let i = 0; i < errorRanges.length; i++) {
+			if (!seen.has(errorRanges[i]))
+				seen.add(errorRanges[i]);
+			else {
+				const index = errorRanges.indexOf(errorRanges[i]);
+				errorMessages[index] = errorMessages[index] + " " + errorMessages[i];
+				errorRanges.splice(i, 1);
+				errorMessages.splice(i, 1);
+				i--;
+			}
 		}
+
 	}
 
 	/*
@@ -843,28 +848,32 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let predicateRanges = [];
 	let predicateMessages = [];
 
-	const keys = [...linesWithPredicates.keys()];
+	if (hover != "true") {
 
-	for (const key of keys) {
-		if (!arrayOfPredicatesContaintsPredicateInLine(errorRanges, JSON.parse(key).lineStart) && !arrayOfPredicatesContaintsPredicateInLine(warningRanges, JSON.parse(key).lineStart)) {
-			predicateRanges.push(JSON.parse(key));
-			const messages = definitionMessages.get(linesWithPredicates.get(key));
+		const keys = [...linesWithPredicates.keys()];
 
-			if (messages.length == 1)
-				predicateMessages.push(messages[0]);
+		for (const key of keys) {
+			if (!arrayOfPredicatesContaintsPredicateInLine(errorRanges, JSON.parse(key).lineStart) && !arrayOfPredicatesContaintsPredicateInLine(warningRanges, JSON.parse(key).lineStart)) {
+				predicateRanges.push(JSON.parse(key));
+				const messages = definitionMessages.get(linesWithPredicates.get(key));
 
-			else {
-				let tmp = "";
-				for (const message of messages) {
-					if (message != messages[messages.length - 1])
-						tmp = tmp + message + " | ";
-					else
-						tmp = tmp + message;
+				if (messages.length == 1)
+					predicateMessages.push(messages[0]);
+
+				else {
+					let tmp = "";
+					for (const message of messages) {
+						if (message != messages[messages.length - 1])
+							tmp = tmp + message + " | ";
+						else
+							tmp = tmp + message;
+					}
+
+					predicateMessages.push(tmp);
 				}
-
-				predicateMessages.push(tmp);
 			}
 		}
+
 	}
 
 	let warningMessages = [];
@@ -879,34 +888,15 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	let warningRangesFinal = [];
 
-	for (const range of checker)
-		warningRangesFinal.push(JSON.parse(range))
+	if (warnings != "true") {
 
-	for (const range of warningRangesFinal) {
-		warningMessages.push("Warning. This line is defining a predicate without proper commenting (line " + range.lineStart + ").");
-	}
+		for (const range of checker)
+			warningRangesFinal.push(JSON.parse(range))
 
-	if (disableFeatures) {
-		if (syntax == "true") {
-			syntaxRanges = [];
-			syntaxMessages = [];
+		for (const range of warningRangesFinal) {
+			warningMessages.push("Warning. This line is defining a predicate without proper commenting (line " + range.lineStart + ").");
 		}
-		if (orderErrors == "true") {
-			errorRanges = [];
-			errorMessages = [];
-		}
-		if (predicateErrors == "true") {
-			predicateErrorRanges = [];
-			predicateErrorMessages = [];
-		}
-		if (warnings == "true") {
-			warningRangesFinal = [];
-			warningMessages = [];
-		}
-		if (hover == "true") {
-			predicateRanges = [];
-			predicateMessages = [];
-		}
+
 	}
 
 	return [syntaxRanges.concat(errorRanges.concat(predicateErrorRanges)), syntaxMessages.concat(errorMessages.concat(predicateErrorMessages)), predicateRanges, predicateMessages, warningRangesFinal, warningMessages];

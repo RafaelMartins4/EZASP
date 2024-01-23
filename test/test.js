@@ -1,7 +1,7 @@
 const assert = require('chai').assert;
 
 // @ts-ignore
-const { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT } = require('../src/parser/getRuleType');
+const { getRuleType, EMPTY, COMMENT, FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, AGGREGATE } = require('../src/parser/getRuleType');
 
 // @ts-ignore
 const { formatText } = require('../src/parser/formatText');
@@ -303,6 +303,22 @@ describe('Extension', function () {
       const result = getRuleType('{n()}.');
       assert.equal(result, CHOICE);
     });
+
+    it(' "#count{Y : p(X, Y, Z)}." must be an aggregate', function () {
+      const result = getRuleType('#count{Y : p(X, Y, Z)}.');
+      assert.equal(result, CHOICE);
+    });
+
+    it(' #maximize {P@1,B: choice(B), beverage_preference(B,P)}." must be an optimization statement', function () {
+      const result = getRuleType('#maximize {P@1,B: choice(B), beverage_preference(B,P)}.');
+      assert.equal(result, OPTIMIZATION_STATEMENT);
+    });
+    
+    it(' "#const n = 1." must be a constant', function () {
+      const result = getRuleType('#const n = 1.');
+      assert.equal(result, CONSTANT);
+    });
+
   });
 
   describe('formatText', function () {
