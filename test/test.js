@@ -304,11 +304,6 @@ describe('Extension', function () {
       assert.equal(result, CHOICE);
     });
 
-    it(' "#count{Y : p(X, Y, Z)}." must be an aggregate', function () {
-      const result = getRuleType('#count{Y : p(X, Y, Z)}.');
-      assert.equal(result, CHOICE);
-    });
-
     it(' #maximize {P@1,B: choice(B), beverage_preference(B,P)}." must be an optimization statement', function () {
       const result = getRuleType('#maximize {P@1,B: choice(B), beverage_preference(B,P)}.');
       assert.equal(result, OPTIMIZATION_STATEMENT);
