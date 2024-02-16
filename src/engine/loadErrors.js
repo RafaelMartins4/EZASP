@@ -4,7 +4,6 @@ const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CO
 // @ts-ignore
 const { formatText } = require('../parser/formatText');
 const { getPredicates } = require('../parser/getPredicates');
-const { hasMagic } = require('glob');
 
 const MAC_OS = 1;
 const WINDOWS = 2;
@@ -92,6 +91,9 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		predicateErrors = disableFeatures.predicateErrors;
 		warnings = disableFeatures.commentWarnings;
 		hover = disableFeatures.hoverPredicates;
+	}
+	else{
+		warnings = "true";
 	}
 
 	/*

@@ -69,3 +69,7 @@ Inicial release with:
 ## 1.1.4
 - Changed logic around aggregates, now most aggregates bugs are fixed;
 - Improved logic to rule and syntax errors detection.
+
+## 1.1.5
+- Made it so the underlines in the Missing Comment Warnings feature are more transparent, making it less flashy;
+- Also made it so the Missing Comment Warnings feature is disabled by default.

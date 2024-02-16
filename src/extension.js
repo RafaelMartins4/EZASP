@@ -14,7 +14,7 @@ const underlineRed = vscode.window.createTextEditorDecorationType({
 });
 
 const underlineYellow = vscode.window.createTextEditorDecorationType({
-	textDecoration: 'underline wavy yellow'
+	textDecoration: 'underline wavy rgba(255, 255, 0, 0.5)'
 });
 
 const MAC_OS = 1;

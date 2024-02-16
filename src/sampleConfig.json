@@ -9,7 +9,7 @@
         "orderErrors":"false",
         "predicateErrors":"false",
         "hoverPredicates":"false",
-        "commentWarnings":"false"
+        "commentWarnings":"true"
     },
     "args": {
         "verboseMode": 1,
