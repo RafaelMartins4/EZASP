@@ -73,3 +73,7 @@ Inicial release with:
 ## 1.1.5
 - Made it so the underlines in the Missing Comment Warnings feature are more transparent, making it less flashy;
 - Also made it so the Missing Comment Warnings feature is disabled by default.
+
+## 1.1.6
+- Fixed bug where the logic disabling predicate errors was inverted.
+- Updated project packages

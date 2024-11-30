@@ -470,7 +470,7 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let predicateErrorRanges = [];
 	let predicateErrorMessages = [];
 
-	if (predicateErrors == "true") {
+	if (predicateErrors != "true") {
 
 		for (const key of undefinedPredicates.keys()) {
 			predicateErrorRanges.push(key);
