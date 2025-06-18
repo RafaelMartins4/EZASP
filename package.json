@@ -14,9 +14,9 @@
     "onLanguage:asp"
   ],
   "repository": {
-		"type": "git",
-		"url": "https://github.com/rmr-henriques/ezasp"
-	},
+    "type": "git",
+    "url": "https://github.com/rmr-henriques/ezasp"
+  },
   "main": "./src/extension.js",
   "contributes": {
     "languages": [
@@ -35,21 +35,27 @@
     ],
     "commands": [
       {
-      "command":"createConfig",
-      "title":"> EZASP - Create config.json"
+        "command": "createConfig",
+        "title": "> EZASP - Create config.json"
       }
     ]
   },
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint",
-    "test": "node ./test/index.js"
+    "test": "node ./test/index.js",
+    "clean": "if exist generated rmdir /s /q generated",
+    "generate": "npm run clean && java -jar D:\\ANTLR\\antlr-4.13.2-complete.jar -Dlanguage=JavaScript -o .\\generated src\\parser\\grammar\\ASP.g4",
+    "parse": "node src/parser/parser.mjs",
+    "build": "webpack",
+    "dev": "webpack --mode development"
   },
   "extensionDependencies": [
     "abelcour.asp-syntax-highlight",
     "ffrankreiter.answer-set-programming-language-support"
   ],
   "devDependencies": {
+    "@types/antlr4": "^4.11.6",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -60,5 +66,8 @@
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
     "typescript": "^5.1.3"
+  },
+  "dependencies": {
+    "antlr4": "^4.13.2"
   }
 }

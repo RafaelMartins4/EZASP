@@ -1,9 +1,4 @@
-// @ts-ignore
-const { FACT, CHOICE, DEFINITION, CONSTRAINT, SHOW_STATEMEMENT, INVALID_RULE, CONSTANT, OPTIMIZATION_STATEMENT, COMMENT, getRuleType } = require('../parser/getRuleType');
-
-// @ts-ignore
-const { formatText } = require('../parser/formatText');
-const { getPredicates } = require('../parser/getPredicates');
+const { loadParser } = require('../parser/parser-wrapper.cjs');
 
 const MAC_OS = 1;
 const WINDOWS = 2;
@@ -17,505 +12,258 @@ function detectOS() {
 	}
 }
 
-function arrayContainsObject(array, object) {
-	for (const element of array) {
-		if (JSON.stringify(element) == JSON.stringify(object)) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-function arrayOfPredicatesContaintsPredicateInLine(array, line) {
-	for (const element of array) {
-		if (element.lineStart == line) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-function getPredicatesRanges(predicate, line, start) {
-	const results = [];
-
-	let i = 0;
-	while (i != -1) {
-		const indexStart = line.indexOf(predicate.name, i);
-		if (indexStart == -1)
-			i = -1;
-		else if (indexStart == 0 || line[indexStart - 1].match(/^[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/? ]$/)) {
-			results.push({ lineStart: start, lineEnd: start, indexStart: indexStart, indexEnd: indexStart + predicate.name.length })
-			i = indexStart + predicate.name.length;
-		}
-		else
-			i = indexStart + predicate.name.length;
-	}
-
-	return results;
-}
-
-function containtsAggregate(rule){
-	return (rule.includes("#sum") || rule.includes("#count") || rule.includes("#min") || rule.includes("#max")) && rule.includes("{") && rule.includes("}")
-}
-
 /**
  * @param {string} textRaw
  */
-function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
+async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	if (textRaw == '' || textRaw == '\r\n' || textRaw == '\n')
 		return [[], []];
 
-	const OS = detectOS();
-
 	const extraTextExists = JSON.stringify(extraTextRaw) != JSON.stringify([[], []]);
-
-	let SPLIT_CODE;
-
-	if (OS == WINDOWS)
-		SPLIT_CODE = '\r\n';
-	else
-		SPLIT_CODE = '\n';
 
 	let syntax;
 	let orderErrors;
 	let predicateErrors;
-	let warnings;
+	let commentWarnings;
 	let hover;
 
 	if (disableFeatures) {
 		syntax = disableFeatures.syntaxChecking;
 		orderErrors = disableFeatures.orderErrors;
 		predicateErrors = disableFeatures.predicateErrors;
-		warnings = disableFeatures.commentWarnings;
+		commentWarnings = disableFeatures.commentWarnings;
 		hover = disableFeatures.hoverPredicates;
 	}
 	else{
-		warnings = "true";
+		commentWarnings = "true";
 	}
 
 	/*
 	* ---------- GET DATA FROM PARSER CLASSES ----------
 	*/
+	const parser = await loadParser();
+	const parserResult = parser.parse(textRaw);
+	const lineRanges = parserResult.lineRanges;
 
-	const text = textRaw.split(SPLIT_CODE);
+	const extraParserResults = [];
+	const extraDefinedPredicates = [];
+	const extraConstructTypes = [];
 
-	const result1 = formatText(text);
-	const formattedText = result1.formattedText;
-	const lines = result1.lines;
-
-	const result2 = getPredicates(formattedText);
-	const predicates = result2.predicates;
-	const nonReductantRules = result2.nonReductantRules;
-
-	const extraText = [];
-	const extraPredicates = [];
-	const extraFormattedText = [];
-	const extraNonReductantRules = [];
-	const extraLines = [];
-
-	if (extraTextRaw != [])
+	if (extraTextRaw != []) {
 		for (const text of extraTextRaw[1]) {
-			extraText.push(text.split(SPLIT_CODE));
-			const extraResult1 = formatText(text.split(SPLIT_CODE));
-			extraFormattedText.push(extraResult1.formattedText);
-			extraLines.push(extraResult1.lines);
-			const extraResult2 = getPredicates(extraResult1.formattedText);
-			extraPredicates.push(extraResult2.predicates);
-			extraNonReductantRules.push(extraResult2.nonReductantRules);
-
-		}
-
-	/*
-	* ---------- CALCULATE ORDER ERRORS ----------
-	*/
-
-
-	//invalid rules
-
-	let syntaxRanges = [];
-	let syntaxMessages = [];
-
-	if (syntax != "true") {
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == INVALID_RULE) {
-				const range = lines[nonReductantRules[i][1]];
-				syntaxRanges.push(range);
-				syntaxMessages.push("Invalid Rule.")
-			}
+			let extraResult = parser.parse(text); 
+			extraParserResults.push(extraResult);
+			extraDefinedPredicates.push(extraResult.definedPredicates);
+			extraConstructTypes.push(extraResult.constructTypes);
 		}
 	}
 
-	let errorRanges = [];
-	let errorMessages = [];
+	// Syntax Errors
+
+	let syntaxErrorRanges = [];
+	let syntaxErrorMessages = [];
+
+	if (syntax != "true") {
+		const syntaxErrors = parserResult.syntaxErrors;
+		const tokenErrors = parserResult.tokenErrors;
+
+		syntaxErrors.forEach(error => {
+			const range = {
+				lineStart: error.lineStart - 1,
+				lineEnd: error.lineEnd - 1,
+				indexStart: error.indexStart,
+				indexEnd: error.indexEnd
+			};
+			syntaxErrorRanges.push(range);
+			syntaxErrorMessages.push(error.message);
+		});
+
+		tokenErrors.forEach(error => {
+			const range = {
+				lineStart: error.lineStart - 1,
+				lineEnd: error.lineEnd - 1,
+				indexStart: error.indexStart,
+				indexEnd: error.indexEnd
+			};
+			syntaxErrorRanges.push(range);
+			syntaxErrorMessages.push(error.message);
+		});
+	}
+
+	// Ordering Errors
+
+	let orderingWarningRanges = [];
+	let orderingWarningMessages = [];
+
+	const constructTypes = parserResult.constructTypes;
 
 	if (orderErrors != "true") {
 
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == INVALID_RULE) {
-				nonReductantRules.splice(i, 1);
+		// Check if the program has a generator (choice rule)
+		let hasGenerator = false;
+
+		hasGenerator = constructTypes.some(construct => construct.type === 'ChoiceRule');
+
+		if(!hasGenerator && extraTextExists) {
+			for(const extraConstructTypeArray of extraConstructTypes) {
+				hasGenerator = extraConstructTypeArray.some(construct => construct.type === 'ChoiceRule');
+				if(hasGenerator)
+					break;
 			}
 		}
 
-		//constants
+		const correctOrder = [
+			'Constant',
+			'Fact',
+			'ChoiceRule',
+			'DefiniteRule',
+			'Constraint',
+			'Optimization',
+			'Show'
+		];
 
-		let lastLineisConstant = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (lastLineisConstant && nonReductantRules[i][0] != CONSTANT) {
-				lastLineisConstant = false;
+		let lastSeenIndex = -1;
+
+		for (const construct of constructTypes) {
+			const currentIndex = correctOrder.indexOf(construct.type);
+	
+			if (currentIndex === -1) {
+				// If the type is not in the correctOrder array, skip it
+				continue;
 			}
-			if (nonReductantRules[i][0] == CONSTANT && !lastLineisConstant) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-				errorMessages.push("Error, all constants must be at the beginning.")
-			}
-		}
 
-		//facts
+			let generatorWarningMessage = "Warning: The program does not have a generator (Choice rule). Consider adding one after Facts and before Definite Rules";;
+	
+			if (currentIndex < lastSeenIndex) {
+				orderingWarningRanges.push({
+					lineStart: construct.lineStart - 1,
+					lineEnd: construct.lineEnd - 1,
+					indexStart: construct.indexStart,
+					indexEnd: construct.indexEnd
+				});
 
-		let lastLineisFact = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (lastLineisFact && nonReductantRules[i][0] != FACT) {
-				lastLineisFact = false;
-			}
-			if (nonReductantRules[i][0] == FACT && !lastLineisFact) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-
-				let isFact = true;
-				let isConstant = false;
-				for (let j = i - 1; j >= 0 && isFact; j--) {
-					if (nonReductantRules[j][0] != FACT)
-						isFact = false;
-					if (nonReductantRules[j][0] == CONSTANT)
-						isConstant = true;
+				let warningMessage;
+				switch (construct.type) {
+					case 'Constant':
+						warningMessage = 'Warning: Constants must be at the beginning of the program.';
+						break;
+					case 'Fact':
+						warningMessage = 'Warning: Facts must be at the beginning, or between constants and choice rules.';
+						break;
+					case 'ChoiceRule':
+						warningMessage = 'Warning: Choices must be at the beginning, or between facts and definitions.';
+						break;
+					case 'DefiniteRule':
+						warningMessage = 'Warning: Definitions must be between choices and constraints.';
+						break;
+					case 'Constraint':
+						warningMessage = 'Warning: Constraints must be between definitions and either optimization or show statements.';
+						break;
+					case 'Optimization':
+						warningMessage = 'Warning: Optimization statements must appear after constraints and before show statements.';
+						break;
+					case 'Show':
+						warningMessage = 'Warning: Show statements must appear at the end of the program.';
+						break;
+					default:
+						warningMessage = `Warning: "${construct.type}" is out of order.`;
 				}
-				if (isConstant)
-					errorMessages.push("Error, this block of facts is in between a block of other rules.")
-				else
-					errorMessages.push("Error, all facts must be at the beginning, or between constants and choices.")
-			}
-		}
 
-		//choices
-
-		let lastLineisChoice = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (nonReductantRules[i][0] == FACT) { }
-			else if (lastLineisChoice && nonReductantRules[i][0] != CHOICE) {
-				lastLineisChoice = false;
-			}
-			if (nonReductantRules[i][0] == CHOICE && !lastLineisChoice) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-
-				let isChoice = true;
-				let isFact = false;
-				for (let j = i - 1; j >= 0 && isChoice; j--) {
-					if (nonReductantRules[j][0] != CHOICE)
-						isChoice = false;
-					if (nonReductantRules[j][0] == FACT)
-						isFact = true;
+				if(!hasGenerator && currentIndex > 2) {
+					orderingWarningMessages.push(warningMessage + ' | ' + generatorWarningMessage);
+					hasGenerator = true; // Set true to avoid pushing the message again
+				} else {
+					orderingWarningMessages.push(warningMessage);
 				}
-				if (isFact)
-					errorMessages.push("Error, this block of choices is in between a block of other rules.")
-				else
-					errorMessages.push("Error, all choices must be at the beginning, or between facts and definitions.")
-			}
-		}
-
-		//definitions
-
-		let lastLineisDefinition = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (nonReductantRules[i][0] == FACT) { }
-			else if (nonReductantRules[i][0] == CHOICE) { }
-			else if (lastLineisDefinition && nonReductantRules[i][0] != DEFINITION) {
-				lastLineisDefinition = false;
-			}
-			if (nonReductantRules[i][0] == DEFINITION && !lastLineisDefinition) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-
-				let isDefinition = true;
-				let isChoice = false;
-				for (let j = i - 1; j >= 0 && isDefinition; j--) {
-					if (nonReductantRules[j][0] != DEFINITION)
-						isDefinition = false;
-					if (nonReductantRules[j][0] == CHOICE)
-						isChoice = true;
+			} else {
+				if(!hasGenerator && currentIndex > 2) {
+					orderingWarningRanges.push({
+						lineStart: construct.lineStart - 1,
+						lineEnd: construct.lineEnd - 1,
+						indexStart: construct.indexStart,
+						indexEnd: construct.indexEnd
+					});
+					orderingWarningMessages.push(generatorWarningMessage);
+					hasGenerator = true; // Set true to avoid pushing the message again
 				}
-				if (isChoice)
-					errorMessages.push("Error, this block of definitions is in between a block of other rules.")
-				else
-					errorMessages.push("Error, all definitions must be between choices and constraints.")
+				lastSeenIndex = currentIndex;
 			}
 		}
-
-		//constraints
-
-		let lastLineisConstraint = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (nonReductantRules[i][0] == FACT) { }
-			else if (nonReductantRules[i][0] == CHOICE) { }
-			else if (nonReductantRules[i][0] == DEFINITION) { }
-			else if (lastLineisConstraint && nonReductantRules[i][0] != CONSTRAINT) {
-				lastLineisConstraint = false;
-			}
-			if (nonReductantRules[i][0] == CONSTRAINT && !lastLineisConstraint) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-
-				let isConstraint = true;
-				let isDefinition = false;
-				for (let j = i - 1; j >= 0 && isConstraint; j--) {
-					if (nonReductantRules[j][0] != CONSTRAINT)
-						isConstraint = false;
-					if (nonReductantRules[j][0] == DEFINITION)
-						isDefinition = true;
-				}
-				if (isDefinition)
-					errorMessages.push("Error, this block of constraints is in between a block of other rules.")
-				else
-					errorMessages.push("Error, all constraints must be between definitions and either optimization or show statements.")
-			}
-		}
-
-		//all choice rules before constraints
-
-		let foundChoice = false;
-		let constraintsEnded = false;
-		for (let i = 0; i < nonReductantRules.length && !constraintsEnded; i++) {
-		    if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (nonReductantRules[i][0] == FACT) { }
-			else if (nonReductantRules[i][0] == CHOICE) {
-				foundChoice = true;
-			}
-			else if (nonReductantRules[i][0] == DEFINITION) { }
-			else if (nonReductantRules[i][0] == CONSTRAINT && !foundChoice) {
-				for (let j = i; j < nonReductantRules.length && !constraintsEnded; j++) {
-					if (nonReductantRules[j][0] != CONSTRAINT) {
-						constraintsEnded = true;
-					}
-					else {
-						const range = lines[nonReductantRules[j][1]];
-						errorRanges.push(range);
-						errorMessages.push("Error, constraints must be preceded by choice rules.")
-					}
-				}
-			}
-		}
-
-		//optimization statements
-
-		let lastLineisOptimization = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (nonReductantRules[i][0] == FACT) { }
-			else if (nonReductantRules[i][0] == CHOICE) { }
-			else if (nonReductantRules[i][0] == DEFINITION) { }
-			else if (nonReductantRules[i][0] == CONSTRAINT) { }
-			else if (lastLineisOptimization && nonReductantRules[i][0] != OPTIMIZATION_STATEMENT) {
-				lastLineisOptimization = false;
-			}
-			if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT && !lastLineisOptimization) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-
-				let isOptimization = true;
-				let isConstraint = false;
-				for (let j = i - 1; j >= 0 && isOptimization; j--) {
-					if (nonReductantRules[j][0] != OPTIMIZATION_STATEMENT)
-						isOptimization = false;
-					if (nonReductantRules[j][0] == CONSTRAINT)
-						isConstraint = true;
-				}
-				if (isConstraint)
-					errorMessages.push("Error, this block of optimization statements is in between a block of other rules.")
-				else
-					errorMessages.push("Error, all optimization statements must be between definitions and show statements.")
-			}
-		}
-
-		//show statements
-
-		let lastLineisShowStatement = true;
-		for (let i = 0; i < nonReductantRules.length; i++) {
-			if (nonReductantRules[i][0] == CONSTANT) { }
-			else if (nonReductantRules[i][0] == FACT) { }
-			else if (nonReductantRules[i][0] == CHOICE) { }
-			else if (nonReductantRules[i][0] == DEFINITION) { }
-			else if (nonReductantRules[i][0] == CONSTRAINT) { }
-			else if (nonReductantRules[i][0] == OPTIMIZATION_STATEMENT) { }
-			else if (lastLineisShowStatement && nonReductantRules[i][0] != SHOW_STATEMEMENT) {
-				lastLineisShowStatement = false;
-			}
-			if (nonReductantRules[i][0] == SHOW_STATEMEMENT && !lastLineisShowStatement) {
-				const range = lines[nonReductantRules[i][1]];
-				errorRanges.push(range);
-
-				let isShow = true;
-				let isConstraint = false;
-				for (let j = i - 1; j >= 0 && isShow; j--) {
-					if (nonReductantRules[j][0] != SHOW_STATEMEMENT)
-						isShow = false;
-					if (nonReductantRules[j][0] == OPTIMIZATION_STATEMENT)
-						isConstraint = true;
-				}
-				if (isConstraint)
-					errorMessages.push("Error, this block of show statements is in between a block of other rules.")
-				else
-					errorMessages.push("Error, all show statements must be after constraints or optimization statements.")
-			}
-		}
-
 	}
-	/*
-	* ---------- CALCULATE DEFINITION ERRORS ----------
+
+	// Stratification Errors
+
+	const definedPredicates = parserResult.definedPredicates;
+	const usedPredicates = parserResult.usedPredicates;
+
+	/* We separate stratification errors in two types:
+		1. Predicates that are used but never defined - Error, this is underlined in red
+		2. Predicates that are used before they are defined - Warning, this is underlined in yellow
 	*/
+	let stratificationErrorRanges = [];
+	let stratificationErrorMessages = [];
 
-	const definedPredicates = [];
-	const undefinedPredicates = new Map();
+	let stratificationWarningRanges = [];
+	let stratificationWarningMessages = [];
 
-	for (let j = 0; j < extraNonReductantRules.length; j++) {
-		for (let i = 0; i < extraNonReductantRules[j].length; i++) {
-			if (extraNonReductantRules[j][i][0] != INVALID_RULE) {
-				for (const predicate of extraPredicates[j][i].head) {
-					const tmp = extraFormattedText[j][extraNonReductantRules[j][i][1]].split(':-')[0];
-					if (extraNonReductantRules[j][i][0] != SHOW_STATEMEMENT) {
-						if (!tmp.includes(':'))
-							definedPredicates.push(predicate)
-						else if (!tmp.split(':')[1].includes(predicate.name))
-							definedPredicates.push(predicate)
-					}
+	for (const [usedPredicateKey, usedPositions] of usedPredicates.entries()) {
+		let isDefinedInExtraFile = false;
+
+		// Checks if another file defines the predicate
+		if(extraTextExists) {
+			for(const extraDefinedPredicatesMap of extraDefinedPredicates) {
+				if(extraDefinedPredicatesMap.has(usedPredicateKey)) {
+					// If the predicate is defined in another file, we don't need to check the rest of the extra files
+					isDefinedInExtraFile = true;
+					break;
 				}
 			}
 		}
+		// If the predicate is defined in another file, we don't need to check the current file
+		if(isDefinedInExtraFile)
+			continue;
+		
+		const definedLocations = definedPredicates.get(usedPredicateKey);
+	
+		if (!definedLocations) {
+			usedPositions.forEach(position => {
+				if (predicateErrors != "true") {
+					const range = {
+						lineStart: position.lineStart - 1,
+						lineEnd: position.lineEnd - 1,
+						indexStart: position.indexStart,
+						indexEnd: position.indexEnd
+					}
+
+					stratificationErrorRanges.push(range);
+					stratificationErrorMessages.push(`Error: Predicate ${usedPredicateKey} is never defined.`);
+				}
+			});
+		} else {
+			// Check if the predicate is defined before each usage
+			usedPositions.forEach(usedPosition => {
+				let isDefinedBefore = definedLocations.some(definedLocation => {
+					return (
+						definedLocation.lineStart < usedPosition.lineStart ||
+						(definedLocation.lineStart === usedPosition.lineStart &&
+							definedLocation.indexStart <= usedPosition.indexStart)
+					);
+				});
+
+				if (!isDefinedBefore && predicateErrors != "true") {
+					const range = {
+						lineStart: usedPosition.lineStart - 1,
+						lineEnd: usedPosition.lineEnd - 1,
+						indexStart: usedPosition.indexStart,
+						indexEnd: usedPosition.indexEnd
+					};
+					stratificationWarningRanges.push(range);
+					stratificationWarningMessages.push(`Warning: Predicate ${usedPredicateKey} is used before it is defined.`);
+				}	
+			});
+		}		
 	}
-
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		if (nonReductantRules[i][0] != INVALID_RULE) {
-			for (const predicate of predicates[i].head) {
-				let tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
-				if (nonReductantRules[i][0] != SHOW_STATEMEMENT) {
-					if (!tmp.includes(':') && !containtsAggregate(tmp)) {
-						let a = formattedText[nonReductantRules[i][1]].indexOf('{');
-						let b = formattedText[nonReductantRules[i][1]].indexOf(predicate.name);
-						let c = formattedText[nonReductantRules[i][1]].indexOf('}');
-						if (!(a != -1 && c != -1 && a < b && b < c) && nonReductantRules[i][0] == CHOICE) {
-							if (!arrayContainsObject(definedPredicates, predicate))
-								if (undefinedPredicates.has(lines[nonReductantRules[i][1]]) && !arrayContainsObject(undefinedPredicates.get(lines[nonReductantRules[i][1]]), predicate))
-									undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-								else
-									undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
-						}
-						else
-							definedPredicates.push(predicate)
-					}
-					else if (containtsAggregate(formattedText[nonReductantRules[i][1]])) {
-						if (formattedText[nonReductantRules[i][1]].indexOf('}') > formattedText[nonReductantRules[i][1]].indexOf(predicate.name)) {
-							if (!arrayContainsObject(definedPredicates, predicate))
-								if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
-									undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-								else
-									undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
-						}
-						else
-							definedPredicates.push(predicate)
-					}
-					else if (!tmp.split(':')[1].includes(predicate.name)) {
-						definedPredicates.push(predicate)
-					}
-					else if (tmp.split(':')[0].includes(predicate.name)) {
-						definedPredicates.push(predicate)
-					}
-					else if (!arrayContainsObject(definedPredicates, predicate)) {
-						if (undefinedPredicates.has(lines[nonReductantRules[i][1]])) {
-							if (!undefinedPredicates.get(lines[nonReductantRules[i][1]]).includes(predicate))
-								undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-						}
-						else
-							undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
-					}
-				}
-				else if (predicate.name == "attr" && predicate.arguments == 4) { }
-				else {
-					if (!arrayContainsObject(definedPredicates, predicate))
-						if (undefinedPredicates.has(lines[nonReductantRules[i][1]]))
-							undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-						else
-							undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
-				}
-			}
-
-			for (const predicate of predicates[i].tail) {
-				if (!arrayContainsObject(definedPredicates, predicate)) {
-					if (undefinedPredicates.get(lines[nonReductantRules[i][1]])) {
-						if (!arrayContainsObject(undefinedPredicates.get(lines[nonReductantRules[i][1]]), predicate))
-							undefinedPredicates.get(lines[nonReductantRules[i][1]]).push(predicate);
-					}
-					else
-						undefinedPredicates.set(lines[nonReductantRules[i][1]], [predicate]);
-				}
-			}
-		}
-	}
-
-	let predicateErrorRanges = [];
-	let predicateErrorMessages = [];
-
-	if (predicateErrors != "true") {
-
-		for (const key of undefinedPredicates.keys()) {
-			predicateErrorRanges.push(key);
-
-			const predicates = undefinedPredicates.get(key);
-
-			if (predicates.length == 1)
-				predicateErrorMessages.push("Error, predicate " + predicates[0].name + "/" + predicates[0].arguments + " is not defined yet.")
-
-			else {
-				let names = "";
-				for (let j = 0; j < predicates.length; j++)
-					if (j == 0)
-						names = names + " " + predicates[j].name + "/" + predicates[j].arguments;
-
-					else if (j == predicates.length - 1)
-						names = names + " and " + predicates[j].name + "/" + predicates[j].arguments;
-					else
-						names = names + ", " + predicates[j].name + "/" + predicates[j].arguments;
-
-				predicateErrorMessages.push("Error, predicates" + names + " are not defined yet.")
-			}
-		}
-
-		const seen = new Set();
-		for (let i = 0; i < errorRanges.length; i++) {
-			if (!seen.has(errorRanges[i]))
-				seen.add(errorRanges[i]);
-			else {
-				const index = errorRanges.indexOf(errorRanges[i]);
-				errorMessages[index] = errorMessages[index] + " " + errorMessages[i];
-				errorRanges.splice(i, 1);
-				errorMessages.splice(i, 1);
-				i--;
-			}
-		}
-
-	}
-
-	/*
-	* ---------- CALCULATE PREDICATE ON-HOVER MESSAGES & WARNING RANGES ----------
-	*/
-
-	const definitionMessages = new Map();
-	const noCommentLines = new Map();
 
 
 	let symbol;
@@ -526,218 +274,193 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	else
 		symbol = "/";
 
-	let name;
+	let currentFileName;
 
 	if (extraTextExists) {
 		const split = fileName.split(symbol)
 
-		name = split[split.length - 1];
+		currentFileName = split[split.length - 1];
 	}
 
+	// Preprocess the ASP comments from the text and save them in a map with their last line as the key
+	function preprocessComments(text) {
+	    const comments = new Map();
+		const normalizedText = text.replace(/\r\n/g, '\n'); // Ensure that it works across all OS
+		const lines = normalizedText.split('\n'); 
 
-	function calculateOnHoverMessage(i) {
-		if (!extraTextExists)
-			if (!definitionMessages.has(JSON.stringify(predicates[i].head[0])))
-				definitionMessages.set(JSON.stringify(predicates[i].head[0]), [formattedText[nonReductantRules[i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (line " + (lines[nonReductantRules[i][1]].lineStart + 1) + ")."])
-			else
-				definitionMessages.get(JSON.stringify(predicates[i].head[0])).push(formattedText[nonReductantRules[i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (line " + (lines[nonReductantRules[i][1]].lineStart + 1) + ").")
-
-		else
-			if (!definitionMessages.has(JSON.stringify(predicates[i].head[0])))
-				definitionMessages.set(JSON.stringify(predicates[i].head[0]), [formattedText[nonReductantRules[i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + name + ": line " + (lines[nonReductantRules[i][1]].lineStart + 1) + ")."])
-			else
-				definitionMessages.get(JSON.stringify(predicates[i].head[0])).push(formattedText[nonReductantRules[i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + name + ": line " + (lines[nonReductantRules[i][1]].lineStart + 1) + ").")
-	}
+		let insideBlockComment = false;
+		let currentBlockComment = ''; 
 
 
-	function extraCalculateOnHoverMessage(j, i) {
-		if (!definitionMessages.has(JSON.stringify(extraPredicates[j][i].head[0])))
-			definitionMessages.set(JSON.stringify(extraPredicates[j][i].head[0]), [extraFormattedText[j][extraNonReductantRules[j][i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + extraTextRaw[0][j] + ": line " + (extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1) + ")."])
-		else
-			definitionMessages.get(JSON.stringify(extraPredicates[j][i].head[0])).push(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1].replace('%', '').replace('%*', '').replace('*%', '') + " (" + extraTextRaw[0][j] + ": line " + (extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1) + ").")
-	}
-
-
-	function createDoubleKey(var1, var2) {
-		return { predicate: var1, name: var2 };
-	}
-
-	for (let j = 0; j < extraNonReductantRules.length; j++) {
-		for (let i = 0; i < extraNonReductantRules[j].length; i++) {
-			let hasDefinedMessage = false;
-			if ((extraNonReductantRules[j][i][0] == FACT || extraNonReductantRules[j][i][0] == CHOICE) && !definitionMessages.has(JSON.stringify(extraPredicates[j][i].head[0]))) {
-				if (extraNonReductantRules[j][i][1] != 0 && getRuleType(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1]) == COMMENT)
-					extraCalculateOnHoverMessage(j, i);
-				else {
-					if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-						noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), [extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1]);
+		lines.forEach((line, index) => {
+			let i = 0;
+			while (i < line.length) {
+				// If we're inside a block comment, accumulate text until we find '*%'
+				if (insideBlockComment) {
+					const blockEndIndex = line.indexOf('*%', i);
+					// Block comment ends on this line
+					if (blockEndIndex !== -1) {
+						currentBlockComment += line.slice(i, blockEndIndex).trim();
+						insideBlockComment = false;
+						if (!comments.has(index + 1)) {
+							comments.set(index + 1, []);
+						}
+						comments.get(index + 1).push(currentBlockComment);
+						currentBlockComment = '';
+						i = blockEndIndex + 2; // Move the index past '*%'
+					} 
+					// Block comment continues on this line
+					else {
+						currentBlockComment += line.slice(i).trim() + ' ';
+						break; // Move to the next line
+					}
+				} 
+				// Found the start of a comment
+				else if (line[i] === '%') {
+					// It's a block comment
+					if (i + 1 < line.length && line[i + 1] === '*') {
+						insideBlockComment = true;
+						currentBlockComment = '';
+						i += 2; // Move past '%*'
+					} 
+					// It's a line comment
+					else {
+						const commentText = line.slice(i + 1).trim();
+						if (!comments.has(index + 1)) {
+							comments.set(index + 1, []);
+						}
+						comments.get(index + 1).push(commentText);
+						break; // No need to process the rest of the line
+					}
+				} else {
+					i++;
 				}
-				hasDefinedMessage = true;
 			}
-			else if (extraNonReductantRules[j][i][0] == FACT || extraNonReductantRules[j][i][0] == CHOICE) {
-				if (extraNonReductantRules[j][i][1] != 0 && getRuleType(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1]) == COMMENT) {
-					extraCalculateOnHoverMessage(j, i);
-				}
-				else {
-					if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-						noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), ([extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1]))
+		});
+
+		return comments;
+	}
+
+	// Calculate the definition messages for the predicates
+	const definitionMessages = new Map();
+	const noCommentLines = new Map();
+	const comments = preprocessComments(textRaw);
+
+	
+	for(const [predicateKey, locations] of definedPredicates.entries()) {
+		locations.forEach(location => {
+			const commentLine = location.lineStart - 1;
+			// If the previous line has a comment, add it to the definitionMessages
+			if(comments.has(commentLine)) {
+				const commentTexts = comments.get(commentLine);
+				commentTexts.forEach(commentText => {
+					if (!definitionMessages.has(predicateKey)) {
+						definitionMessages.set(predicateKey, []);
+					}
+					if(!extraTextExists)
+						definitionMessages.get(predicateKey).push(`${commentText} (line ${location.lineStart}).`);
 					else
-						noCommentLines.get(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))).push(extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1)
+						definitionMessages.get(predicateKey).push(`${commentText} (${currentFileName} line ${location.lineStart}).`);
+				});
+			// If not, add it to the noCommentLines, saving the predicateKey and the location
+			// This will later be processed to add a 'No comment' message with all the lines to the definitionMessages map 
+			} else {
+				if (!noCommentLines.has(predicateKey)) {
+					noCommentLines.set(predicateKey, []);
 				}
-				hasDefinedMessage = true;
+				console.log('pushing location to noCommentLines: ', location);
+				noCommentLines.get(predicateKey).push(location);
 			}
+		});
+	}
 
-			if (extraNonReductantRules[j][i][0] != INVALID_RULE) {
-				for (const predicate of extraPredicates[j][i].head) {
-					const tmp = extraFormattedText[j][extraNonReductantRules[j][i][1]].split(':-')[0];
-					if (extraNonReductantRules[j][i][0] != SHOW_STATEMEMENT) {
-						if (!tmp.includes(':')) {
-							if (!definitionMessages.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-								if (extraNonReductantRules[j][i][1] != 0 && getRuleType(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1]) == COMMENT)
-									extraCalculateOnHoverMessage(j, i);
-								else {
-									if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-										noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), [extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1])
-									else
-										noCommentLines.get(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))).push(extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1)
-								}
-							else if (!hasDefinedMessage) {
-								if (extraNonReductantRules[j][i][1] != 0 && getRuleType(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1]) == COMMENT) {
-									if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-										noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), [extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1])
-									else
-										noCommentLines.get(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))).push(extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1)
-								}
-								else {
-									if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-										noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), [extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1])
-									else
-										noCommentLines.get(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))).push(extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1)
-								}
-							}
-						}
-						else if (!tmp.split(':')[1].includes(predicate.name)) {
-							if (!definitionMessages.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-								if (extraNonReductantRules[j][i][1] != 0 && getRuleType(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1]) == COMMENT)
-									extraCalculateOnHoverMessage(j, i);
-								else {
-									if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-										noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), [extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1])
-									else
-										noCommentLines.get(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))).push(extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1)
-								}
-							else if (!hasDefinedMessage) {
-								if (extraNonReductantRules[j][i][1] != 0 && getRuleType(extraFormattedText[j][extraNonReductantRules[j][i][1] - 1]) == COMMENT) {
-									extraCalculateOnHoverMessage(j, i);
-								}
-								else {
-									if (!noCommentLines.has(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))))
-										noCommentLines.set(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j])), [extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1])
-									else
-										noCommentLines.get(JSON.stringify(createDoubleKey(extraPredicates[j][i].head[0], extraTextRaw[0][j]))).push(extraLines[j][extraNonReductantRules[j][i][1]].lineStart + 1)
-								}
-							}
-						}
-					}
-				}
-			}
+	// Process the noCommentLines to add a 'No comment' message to the definitionMessages map
+	for (const [predicateKey, lines] of noCommentLines.entries()) {
+		if (!definitionMessages.has(predicateKey)) {
+			definitionMessages.set(predicateKey, []);
+		}
+		const uniqueLineStarts = [...new Set(lines.map(line => line.lineStart))]; // Remove duplicates
+		if(!extraTextExists) {
+			if(uniqueLineStarts.length > 1)
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (lines ${uniqueLineStarts.join(',')}).`);
+			else
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (line ${uniqueLineStarts.join(',')}).`);
+		} else {
+			if(uniqueLineStarts.length > 1)
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentFileName} lines ${uniqueLineStarts.join(',')}).`);
+			else 
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentFileName} line ${uniqueLineStarts.join(',')}).`);
 		}
 	}
 
-	let warningRanges = [];
-
-	function pushWarningRange(i) {
-		if (nonReductantRules[i][0] != OPTIMIZATION_STATEMENT)
-			warningRanges.push(lines[nonReductantRules[i][1]])
-	}
-
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		let hasDefinedMessage = false;
-		if ((nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE) && !definitionMessages.has(JSON.stringify(predicates[i].head[0]))) {
-			if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT)
-				calculateOnHoverMessage(i);
-			else {
-				if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-					noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), [lines[nonReductantRules[i][1]].lineStart + 1]);
-				pushWarningRange(i);
-			}
-			hasDefinedMessage = true;
-		}
-		else if (nonReductantRules[i][0] == FACT || nonReductantRules[i][0] == CHOICE) {
-			if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
-				calculateOnHoverMessage(i);
-			}
-			else {
-				if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-					noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
-				else
-					noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-				pushWarningRange(i);
-			}
-			hasDefinedMessage = true;
-		}
-
-		if (nonReductantRules[i][0] != INVALID_RULE) {
-			for (const predicate of predicates[i].head) {
-				const tmp = formattedText[nonReductantRules[i][1]].split(':-')[0];
-				if (nonReductantRules[i][0] != SHOW_STATEMEMENT) {
-					if (!tmp.includes(':')) {
-						if (!hasDefinedMessage && !definitionMessages.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT)
-								calculateOnHoverMessage(i);
-							else {
-								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), [lines[nonReductantRules[i][1]].lineStart + 1])
-								else
-									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								pushWarningRange(i);
+	// Process the extra files' predicates
+	if(extraTextExists) {
+		extraDefinedPredicates.forEach((extraDefinedPredicatesMap, index) => {
+			const currentExtraFileName = extraTextRaw[0][index];
+			const extraComments = preprocessComments(extraTextRaw[1][index]);
+			const extraNoCommentLines = new Map();
+			for(const [predicateKey, locations] of extraDefinedPredicatesMap.entries()) {
+				locations.forEach(location => {
+					const commentLine = location.lineStart - 1;
+					// If the previous line has a comment, add it to the definitionMessages
+					if(extraComments.has(commentLine)) {
+						const commentTexts = extraComments.get(commentLine);
+						commentTexts.forEach(commentText => {
+							if (!definitionMessages.has(predicateKey)) {
+								definitionMessages.set(predicateKey, []);
 							}
-						else if (!hasDefinedMessage) {
-							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
-								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
-								else
-									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								pushWarningRange(i);
-							}
-							else {
-								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
-								else
-									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								pushWarningRange(i);
-							}
+							definitionMessages.get(predicateKey).push(`${commentText} (${currentExtraFileName} line ${location.lineStart}).`);
+						});
+					// If not, add it to the noCommentLines, saving the predicateKey and the line number
+					// This will later be processed to add a 'No comment' message with all the lines to the definitionMessages map 
+					} else {
+						if (!extraNoCommentLines.has(predicateKey)) {
+							extraNoCommentLines.set(predicateKey, []);
 						}
+						extraNoCommentLines.get(predicateKey).push(location.lineStart);
 					}
-					else if (!tmp.split(':')[1].includes(predicate.name)) {
-						if (!definitionMessages.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT)
-								calculateOnHoverMessage(i);
-							else {
-								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
-								else
-									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								pushWarningRange(i);
-							}
-						else if (!hasDefinedMessage) {
-							if (nonReductantRules[i][1] != 0 && getRuleType(formattedText[nonReductantRules[i][1] - 1]) == COMMENT) {
-								calculateOnHoverMessage(i);
-							}
-							else {
-								if (!noCommentLines.has(JSON.stringify(createDoubleKey(predicates[i].head[0], name))))
-									noCommentLines.set(JSON.stringify(createDoubleKey(predicates[i].head[0], name)), ([lines[nonReductantRules[i][1]].lineStart + 1]))
-								else
-									noCommentLines.get(JSON.stringify(createDoubleKey(predicates[i].head[0], name))).push(lines[nonReductantRules[i][1]].lineStart + 1)
-								pushWarningRange(i);
-							}
-						}
-					}
+				});
+			}
+
+			// Process the noCommentLines to add a 'No comment' message to the definitionMessages map
+
+			for (const [predicateKey, lines] of extraNoCommentLines.entries()) {
+				if (!definitionMessages.has(predicateKey)) {
+					definitionMessages.set(predicateKey, []);
 				}
+				const uniqueLines = [...new Set(lines)]; // Remove duplicates
+				if(uniqueLines.length > 1)
+					definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentExtraFileName} lines ${uniqueLines.join(',')}).`);
+				else 
+					definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentExtraFileName} line ${uniqueLines.join(',')}).`);
 			}
-		}
+		});
 	}
 
+	// Add a warning message to lines that define a predicate and are not commented
+	let noCommentWarningRanges = [];
+	let noCommentWarningLines = [];
+
+	for(const [noCommentKey, locations] of noCommentLines.entries()) {
+		locations.forEach(location => {
+			if(!noCommentWarningLines.includes(location.lineStart)) {
+				noCommentWarningLines.push(location.lineStart);
+			}
+		});
+	}
+
+	noCommentWarningLines.forEach(line => {
+		lineRanges.get(line).forEach(range => {
+			noCommentWarningRanges.push({
+				lineStart: range.lineStart - 1,
+				lineEnd: range.lineEnd - 1,
+				indexStart: range.indexStart,
+				indexEnd: range.indexEnd
+			});
+		});
+	});
+
+	// Remove duplicates from the definitionMessages map (not sure if this is necessary)
 	for (const key of [...definitionMessages.keys()]) {
 		const checker = [];
 		const array = definitionMessages.get(key);
@@ -749,159 +472,187 @@ function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		definitionMessages.set(key, checker);
 	}
 
-	const noCommentLinesKeys = [...noCommentLines.keys()];
+	function doRangesOverlap(range1, range2) {
+		if (range1.lineEnd < range2.lineStart) return false;
+		if (range1.lineStart > range2.lineEnd) return false;
 
-	const noCommentMessages = new Map();
-
-	for (const key of noCommentLinesKeys) {
-
-		const parsedKey = JSON.parse(key)
-
-		let tmp = "No comment where this predicate is defined (";
-		const arrayOfLines = noCommentLines.get(key);
-
-		const checker = [];
-
-		for (const line of arrayOfLines)
-			if (!checker.includes(line))
-				checker.push(line)
-
-		if (checker.length == 1)
-			if (!extraTextExists) {
-				tmp = tmp + "line " + checker[0] + ").";
-			}
-			else {
-				if (noCommentMessages.has(JSON.stringify(parsedKey.predicate))) {
-					tmp = noCommentMessages.get(JSON.stringify(parsedKey.predicate))
-					tmp = tmp.split(").")[0] + ", " + parsedKey.name + ": line " + checker[0] + ").";
-				}
-				else
-					tmp = tmp + parsedKey.name + ": line " + checker[0] + ").";
-			}
-
-		else {
-			if (!extraTextExists) {
-				tmp = tmp + "lines ";
-				for (const line of checker) {
-					if (line != checker[checker.length - 1])
-						tmp = tmp + line + ", ";
-					else
-						tmp = tmp + line + ").";
-				}
-
-				if (!tmp.includes(")."))
-					tmp = tmp + ").";
-			}
-
-			else {
-				if (noCommentMessages.has(JSON.stringify(parsedKey.predicate))) {
-					tmp = noCommentMessages.get(JSON.stringify(parsedKey.predicate));
-					tmp = tmp.split(").")[0] + "; " + parsedKey.name + ": lines ";
-					for (const line of checker) {
-						if (line != checker[checker.length - 1])
-							tmp = tmp + line + ", ";
-						else
-							tmp = tmp + line + ").";
-					}
-				}
-				else {
-					tmp = tmp + parsedKey.name + ": lines ";
-					for (const line of checker) {
-						if (line != checker[checker.length - 1])
-							tmp = tmp + line + ", ";
-						else
-							tmp = tmp + line + ").";
-					}
-				}
-			}
-		}
-		noCommentMessages.set(JSON.stringify(parsedKey.predicate), tmp);
-	}
-
-	for (const predicate of [...noCommentMessages.keys()]) {
-		if (definitionMessages.has(predicate))
-			definitionMessages.get(predicate).push(noCommentMessages.get(predicate))
-		else
-			definitionMessages.set(predicate, [noCommentMessages.get(predicate)])
-	}
-
-	const linesWithPredicates = new Map();
-
-	for (let i = 0; i < nonReductantRules.length; i++) {
-		for (const predicate of predicates[i].head) {
-			if (definitionMessages.has(JSON.stringify(predicate))) {
-				const ranges = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart);
-				for (const range of ranges)
-					if (!linesWithPredicates.has(JSON.stringify(range)))
-						linesWithPredicates.set(JSON.stringify(range), JSON.stringify(predicate))
-			}
+		if (range1.lineStart === range1.lineEnd && range2.lineStart === range2.lineEnd && range1.lineStart === range2.lineStart) {
+			return range1.indexEnd > range2.indexStart && range1.indexStart < range2.indexEnd;
 		}
 
-		for (const predicate of predicates[i].tail) {
-			if (definitionMessages.has(JSON.stringify(predicate))) {
-				const ranges = getPredicatesRanges(predicate, formattedText[nonReductantRules[i][1]], lines[nonReductantRules[i][1]].lineStart)
-				for (const range of ranges)
-					if (!linesWithPredicates.has(JSON.stringify(predicate)))
-						linesWithPredicates.set(JSON.stringify(range), JSON.stringify(predicate))
+		if (range1.lineEnd === range2.lineStart) {
+			if (range1.lineEnd === range1.lineStart && range2.lineStart === range2.lineEnd) {
+				return range1.indexEnd > range2.indexStart && range1.indexStart < range2.indexEnd;
 			}
+			return range1.indexEnd > range2.indexStart;
 		}
+		if (range2.lineEnd === range1.lineStart) {
+			if (range2.lineEnd === range2.lineStart && range1.lineStart === range1.lineEnd) {
+				return range2.indexEnd > range1.indexStart && range2.indexStart < range1.indexEnd;
+			}
+			return range2.indexEnd > range1.indexStart;
+		}
+
+		return true;
 	}
 
-	let predicateRanges = [];
-	let predicateMessages = [];
+	function containsErrorInLocation(location) {
+		const normalizedLocation = {
+			lineStart: location.lineStart - 1,
+			lineEnd: location.lineEnd - 1,
+			indexStart: location.indexStart,
+			indexEnd: location.indexEnd
+		};
 
-	if (hover != "true") {
-
-		const keys = [...linesWithPredicates.keys()];
-
-		for (const key of keys) {
-			if (!arrayOfPredicatesContaintsPredicateInLine(errorRanges, JSON.parse(key).lineStart) && !arrayOfPredicatesContaintsPredicateInLine(warningRanges, JSON.parse(key).lineStart)) {
-				predicateRanges.push(JSON.parse(key));
-				const messages = definitionMessages.get(linesWithPredicates.get(key));
-
-				if (messages.length == 1)
-					predicateMessages.push(messages[0]);
-
-				else {
-					let tmp = "";
-					for (const message of messages) {
-						if (message != messages[messages.length - 1])
-							tmp = tmp + message + " | ";
-						else
-							tmp = tmp + message;
-					}
-
-					predicateMessages.push(tmp);
+		if(predicateErrors != "true") {
+			stratificationErrorRanges.forEach(range => {
+				if(doRangesOverlap(range, normalizedLocation)) {
+					return true;
 				}
-			}
+			});
 		}
 
+		if(syntax != "true") {
+			syntaxErrorRanges.forEach(range => {
+				if(doRangesOverlap(range, normalizedLocation)) {
+					return true;
+				}
+			});
+		}
+
+		return false;
 	}
 
-	let warningMessages = [];
+	function containsWarningInLocation(location) {
+		const normalizedLocation = {
+			lineStart: location.lineStart - 1,
+			lineEnd: location.lineEnd - 1,
+			indexStart: location.indexStart,
+			indexEnd: location.indexEnd
+		};
+
+		if(commentWarnings != "true") {
+			noCommentWarningRanges.forEach(range => {
+				if(doRangesOverlap(range, normalizedLocation)) {
+					return true;
+				}
+			});
+		}
+
+		if(orderErrors != "true") {
+			orderingWarningRanges.forEach(range => {
+				if(doRangesOverlap(range, normalizedLocation)) {
+					return true;
+				}
+			});
+		}
+
+		if(predicateErrors != "true") {
+			stratificationWarningRanges.forEach(range => {
+				if(doRangesOverlap(range, normalizedLocation)) {
+					return true;
+				}
+			});
+		}
+
+		return false;
+	}
+
+	let noCommentWarningMessages = [];
 
 	const checker = [];
 
-	for (const range of warningRanges) {
+	for (const range of noCommentWarningRanges) {
 		const tmp = JSON.stringify(range);
 		if (!checker.includes(JSON.stringify(range)))
 			checker.push(tmp)
 	}
 
-	let warningRangesFinal = [];
+	let noCommentWarningRangesFinal = [];
 
-	if (warnings != "true") {
-
-		for (const range of checker)
-			warningRangesFinal.push(JSON.parse(range))
-
-		for (const range of warningRangesFinal) {
-			warningMessages.push("Warning. This line is defining a predicate without proper commenting (line " + range.lineStart + ").");
+	if (commentWarnings != "true") {
+		for (const range of checker) {
+			if(!containsErrorInLocation(JSON.parse(range))) {
+				noCommentWarningRangesFinal.push(JSON.parse(range))
+			}
 		}
 
+		for (const range of noCommentWarningRangesFinal) {
+			noCommentWarningMessages.push(`Warning. This line is defining a predicate without proper commenting (line ${range.lineStart + 1}).`);
+		}
 	}
 
-	return [syntaxRanges.concat(errorRanges.concat(predicateErrorRanges)), syntaxMessages.concat(errorMessages.concat(predicateErrorMessages)), predicateRanges, predicateMessages, warningRangesFinal, warningMessages];
+	let fullLineWarningRanges = orderingWarningRanges.concat(noCommentWarningRangesFinal);
+	let fullLineWarningMessages = orderingWarningMessages.concat(noCommentWarningMessages);
+
+	// Do a final check to ensure that ordering warnings only appear in lines that do not have any other errors/warnings
+	// This is done to avoid creating lines with entagled errors and warnings. Given that ordering warnings underline the whole line, we give priority
+	// to errors and warnings that are specific to the predicate (i.e. there can only be full line warnings/errors if there are no other errors/warnings in the line) 
+	let finalFullLineWarningRanges = [];
+	let finalFullLineWarningMessages = [];
+
+	// TODO: for each range in fullLineWarningRanges, check if it overlaps with any error range, if it does, skip it
+	// if it does not, add it to finalFullLineWarningRanges and finalFullLineWarningMessages
+
+
+
+	let predicateHoverRanges = [];
+	let predicateHoverMessages = [];
+
+	if(hover != "true") {
+		for (const [predicateKey, locations] of definedPredicates.entries()) {
+			locations.forEach(location => {
+				if(!containsErrorInLocation(location) && !containsWarningInLocation(location)) {
+					if (!predicateHoverRanges.includes(location) && definitionMessages.has(predicateKey)) {
+						predicateHoverRanges.push({
+							lineStart: location.lineStart - 1,
+							lineEnd: location.lineEnd - 1,
+							indexStart: location.indexStart,
+							indexEnd: location.indexEnd
+						});
+						const messages = definitionMessages.get(predicateKey);
+						let finalMessage = "";
+						for(let i = 0; i < messages.length - 1; i++) {
+							finalMessage += messages[i] + " | ";
+						}
+						finalMessage += messages[messages.length - 1];
+						predicateHoverMessages.push(finalMessage);
+					}
+				}
+			});	
+		}
+
+		for( const [predicateKey, locations] of usedPredicates.entries()) {
+			locations.forEach(location => {
+				if(!containsErrorInLocation(location) && !containsWarningInLocation(location)) {
+					if (!predicateHoverRanges.includes(location) && definitionMessages.has(predicateKey)) {
+						predicateHoverRanges.push({
+							lineStart: location.lineStart - 1,
+							lineEnd: location.lineEnd - 1,
+							indexStart: location.indexStart,
+							indexEnd: location.indexEnd
+						});
+						const messages = definitionMessages.get(predicateKey);
+						let finalMessage = "";
+						for(let i = 0; i < messages.length - 1; i++) {
+							finalMessage += messages[i] + " | ";
+						}
+						finalMessage += messages[messages.length - 1];
+						predicateHoverMessages.push(finalMessage);
+					}
+				}
+			});		
+		}
+	}
+
+	return [syntaxErrorRanges.concat(stratificationErrorRanges), 
+		orderingWarningRanges.concat(stratificationWarningRanges.concat(noCommentWarningRangesFinal)),
+		syntaxErrorMessages.concat(stratificationErrorMessages), 
+		orderingWarningMessages.concat(stratificationWarningMessages.concat(noCommentWarningMessages)),
+		predicateHoverRanges, predicateHoverMessages
+	 ];
+
+	
 }
 
-module.exports = { loadErrors }
+module.exports = { loadErrors };

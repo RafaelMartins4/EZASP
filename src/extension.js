@@ -1,11 +1,9 @@
 const vscode = require('vscode');
-
-const { loadErrors } = require('./engine/loadErrors');
-
+const { loadErrors } = require('./engine/loadErrors.js');
 const { readFileSync, existsSync, writeFileSync } = require('fs');
-
 const path = require('path');
 const { dirname } = require('path');
+const { error } = require('console');
 
 let disableFeatures;
 
@@ -42,29 +40,33 @@ function convertRange(range){
 /**
  * @param {string} text
  */
-function getRanges(text, name, extraText){
-	const data = loadErrors(text, name, extraText, disableFeatures);
+async function getResults(text, name, extraText) {
+	const data = await loadErrors(text, name, extraText, disableFeatures);
 
 	const errorRanges = [];
-	const predicateRanges = [];
 	const warningRanges = [];
+	const predicateHoverRanges = [];
 
-	if(data[0])
-	data[0].forEach(range => {
-		errorRanges.push(convertRange(range));
-	})
+	const errorMessages = data[2];
+	const warningMessages = data[3];
+	const predicateHoverMessages = data[5];
+	
+	if(data[0])		// syntaxErrorRanges + stratificationErrorRanges
+		data[0].forEach(range => {
+			errorRanges.push(convertRange(range));
+		})
 
-	if(data[2])
-	data[2].forEach(range => {
-		predicateRanges.push(convertRange(range));
-	})
+	if(data[1]) 	// orderingWarningRanges + stratificationWarningRanges + noCommentWarningRanges
+		data[1].forEach(range => {
+			warningRanges.push(convertRange(range));
+		})
 
-	if(data[4])
-	data[4].forEach(range => {
-		warningRanges.push(convertRange(range));
-	})
+	if(data[4])		// predicateHoverRanges
+		data[4].forEach(range => {
+			predicateHoverRanges.push(convertRange(range));
+		})
 
-	return [data,errorRanges,predicateRanges,warningRanges];
+	return [data, errorRanges, warningRanges, predicateHoverRanges, errorMessages, warningMessages, predicateHoverMessages];
 }	
 
 function getExtraFiles(activeEditor){
@@ -108,101 +110,144 @@ function getExtraFiles(activeEditor){
 		if(existsSync(dir+'/'+file))
 			text.push(readFileSync(dir+'/'+file, 'utf-8'));
 		else
-			vscode.window.showErrorMessage('File ' +file+ ' does not exist in this folder, check config.json file.');
+			vscode.window.showErrorMessage('File ' + file + ' does not exist in this folder, check config.json file.');
 	}
 
 	return [files,text];
 }
 
-function loadThings(activeEditor, fileName){
+let hoverDisposable;
+async function loadThings(activeEditor, fileName) {
+    let results = await getResults(activeEditor.document.getText(), fileName, getExtraFiles(activeEditor));
+	activeEditor.setDecorations(underlineRed, results[1]);
+    activeEditor.setDecorations(underlineYellow, results[2]);
 
-	let results = getRanges(activeEditor.document.getText(), fileName, getExtraFiles(activeEditor));
-		activeEditor.setDecorations(underlineRed, results[1]);
-		activeEditor.setDecorations(underlineYellow, results[3]);
+    const errorObjects = results[0][0];
+	const warningObjects = results[0][1];
+    const predicateHoverObjects = results[0][4];
 
-		const errorObjects = results[0][0];
-		const predicateObjects = results[0][2];
-		const warningObjects = results[0][4];
+    const errorRanges = results[1];
+	const warningRanges = results[2];
+    const predicateHoverRanges = results[3];
 
-		const errorRanges = results[1];
-		const predicateRanges = results[2];
-		const warningRanges = results[3];
-		
-		const errorMessages = results[0][1];
-		const predicateMessages = results[0][3];
-		const warningMessages = results[0][5];
- 		
+    const errorMessages = results[4];
+	const warningMessages = results[5];
+    const predicateMessages = results[6];
 
-		let disposable = vscode.languages.registerHoverProvider('*', {
-			provideHover(document, position) {
-				for (let i = 0; i<errorObjects.length; i++) {	
-					if (errorRanges[i].contains(position)) {
-						const hoverMessage = new vscode.Hover(errorMessages[i]);
-						return hoverMessage;
-					}
-				}
+	/* console.log('Error Objects:');
+	console.log(errorObjects);
 
-				for (let i = 0; i<predicateObjects.length; i++) {	
-					if (predicateRanges[i].contains(position)) {
-						const hoverMessage = new vscode.Hover(predicateMessages[i]);
-						return hoverMessage;
-					}
-				}
+	console.log('Error Ranges:');
+	console.log(errorRanges);
 
-				for (let i = 0; i<warningObjects.length; i++) {	
-					if (warningRanges[i].contains(position)) {
-						const hoverMessage = new vscode.Hover(warningMessages[i]);
-						return hoverMessage;
-					}
-				}
-			}
-		});
+	console.log('Error Messages:');
+	console.log(errorMessages);
 
-	return disposable;
+	console.log('----------------------------------')
+
+	console.log('Warning Objects:');
+	console.log(warningObjects);
+
+	console.log('Warning Ranges:');
+	console.log(warningRanges);
+
+	console.log('Warning Messages:');
+	console.log(warningMessages);
+
+	console.log('----------------------------------')
+
+	console.log('Predicate Hover Objects:');
+	console.log(predicateHoverObjects);
+
+	console.log('Predicate Hover Ranges:');
+	console.log(predicateHoverRanges);
+
+	console.log('Predicate Messages:');
+	console.log(predicateMessages); */
+
+	
+
+	
+
+    
+    // Dispose of the previous hover provider if it exists
+    if (hoverDisposable) {
+        hoverDisposable.dispose();
+    }
+
+    // Register a new hover provider
+    hoverDisposable = vscode.languages.registerHoverProvider('*', {
+        provideHover(document, position) {
+            for (let i = 0; i < errorObjects.length; i++) {
+                if (errorRanges[i].contains(position)) {
+                    const hoverMessage = new vscode.Hover(errorMessages[i]);
+                    return hoverMessage;
+                }
+            }
+
+			for (let i = 0; i < warningObjects.length; i++) {
+                if (warningRanges[i].contains(position)) {
+                    const hoverMessage = new vscode.Hover(warningMessages[i]);
+                    return hoverMessage;
+                }
+            }
+
+            for (let i = 0; i < predicateHoverObjects.length; i++) {
+                if (predicateHoverRanges[i].contains(position)) {
+                    const hoverMessage = new vscode.Hover(predicateMessages[i]);
+					return hoverMessage;
+                }
+            }            
+        }
+    });
+
+    return hoverDisposable;
 }
-
 
 /**
  * @param {vscode.ExtensionContext} context
  */
-function activate(context) {
-	
+async function activate(context) {	
 	let activeEditor = vscode.window.activeTextEditor;
 
 	let fileName = activeEditor.document.fileName;
 
 	if(fileName.includes('.lp') || fileName.includes('.cl') || fileName.includes('.clp') 
 	|| fileName.includes('.iclp') || fileName.includes('.Clp') || fileName.includes('.iClp')
-	|| fileName.includes('.blp') || fileName.includes('.iblp')){
+	|| fileName.includes('.blp') || fileName.includes('.iblp')) {
 
-		let disposable = loadThings(activeEditor, fileName);
+		let disposable = await loadThings(activeEditor, fileName);
 		context.subscriptions.push(disposable);
 
 		vscode.workspace.onDidChangeTextDocument(() => {
-			disposable.dispose();
-			activeEditor.setDecorations(underlineRed,[]);
-			activeEditor.setDecorations(underlineYellow,[]);
-
-			disposable = loadThings(activeEditor, fileName);
-			context.subscriptions.push(disposable);
+			(async () => {
+				disposable.dispose(); // Dispose of the previous disposable
+				activeEditor.setDecorations(underlineRed, []);
+				activeEditor.setDecorations(underlineYellow, []);
+		
+				disposable = await loadThings(activeEditor, fileName); // Load new hover provider
+				context.subscriptions.push(disposable); // Add to subscriptions
+			})().catch(err => console.error(err));
 		});
 
 		vscode.window.onDidChangeActiveTextEditor(editor => {
-
-			fileName = editor.document.fileName;
-			
-			if(fileName.includes('.lp') || fileName.includes('.cl') || fileName.includes('.clp') 
-			|| fileName.includes('.iclp') || fileName.includes('.Clp') || fileName.includes('.iClp')
-			|| fileName.includes('.blp') || fileName.includes('.iblp')){
-				activeEditor = editor;
-				disposable.dispose();	
-				activeEditor.setDecorations(underlineRed,[]);
-				activeEditor.setDecorations(underlineYellow,[]);
-
-				disposable = loadThings(activeEditor, fileName);
-				context.subscriptions.push(disposable);
-			}
-		});	
+			(async () => {
+				fileName = editor.document.fileName;
+		
+				if (fileName.includes('.lp') || fileName.includes('.cl') || fileName.includes('.clp') ||
+					fileName.includes('.iclp') || fileName.includes('.Clp') || fileName.includes('.iClp') ||
+					fileName.includes('.blp') || fileName.includes('.iblp')) {
+					
+					activeEditor = editor;
+					disposable.dispose(); // Dispose of the previous disposable
+					activeEditor.setDecorations(underlineRed, []);
+					activeEditor.setDecorations(underlineYellow, []);
+		
+					disposable = await loadThings(activeEditor, fileName); // Load new hover provider
+					context.subscriptions.push(disposable); // Add to subscriptions
+				}
+			})().catch(err => console.error(err));
+		});
 	}
 
 	const initClingoConfig = vscode.commands.registerCommand('createConfig', function () {
@@ -212,11 +257,10 @@ function activate(context) {
 	});
 
 	context.subscriptions.push(initClingoConfig);
+
+	vscode.window.showInformationMessage('EZASP Extension is now active!');
 }
 
 function deactivate() { }
 
-module.exports = {
-	activate,
-	deactivate
-}
+module.exports = { activate, deactivate };
