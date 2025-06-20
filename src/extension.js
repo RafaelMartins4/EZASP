@@ -207,7 +207,7 @@ async function loadThings(activeEditor, fileName) {
 /**
  * @param {vscode.ExtensionContext} context
  */
-async function activate(context) {	
+async function activate(context) {
 	let activeEditor = vscode.window.activeTextEditor;
 
 	let fileName = activeEditor.document.fileName;

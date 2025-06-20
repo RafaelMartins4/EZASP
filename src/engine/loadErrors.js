@@ -91,6 +91,8 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		});
 	}
 
+	//console.log("Syntax Errors: ", syntaxErrorRanges);
+
 	// Ordering Errors
 
 	let orderingWarningRanges = [];
@@ -192,6 +194,8 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
+	//console.log("Ordering Errors: ", orderingWarningRanges);
+
 	// Stratification Errors
 
 	const definedPredicates = parserResult.definedPredicates;
@@ -264,6 +268,9 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			});
 		}		
 	}
+
+	//console.log("Stratification Errors: ", stratificationErrorRanges);
+ 	//console.log("Stratification Warnings: ", stratificationWarningRanges);
 
 
 	let symbol;
@@ -368,7 +375,6 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				if (!noCommentLines.has(predicateKey)) {
 					noCommentLines.set(predicateKey, []);
 				}
-				console.log('pushing location to noCommentLines: ', location);
 				noCommentLines.get(predicateKey).push(location);
 			}
 		});
@@ -460,6 +466,30 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		});
 	});
 
+	let noCommentWarningMessages = [];
+
+	const checker = [];
+
+	for (const range of noCommentWarningRanges) {
+		const tmp = JSON.stringify(range);
+		if (!checker.includes(JSON.stringify(range)))
+			checker.push(tmp)
+	}
+
+	let noCommentWarningRangesFinal = [];
+
+	if (commentWarnings != "true") {
+		for (const range of checker) {
+			if(!containsErrorInLocation(JSON.parse(range))) {
+				noCommentWarningRangesFinal.push(JSON.parse(range))
+			}
+		}
+
+		for (const range of noCommentWarningRangesFinal) {
+			noCommentWarningMessages.push(`Warning: This line is defining a predicate without proper commenting (line ${range.lineStart + 1}).`);
+		}
+	}
+
 	// Remove duplicates from the definitionMessages map (not sure if this is necessary)
 	for (const key of [...definitionMessages.keys()]) {
 		const checker = [];
@@ -472,29 +502,109 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		definitionMessages.set(key, checker);
 	}
 
-	function doRangesOverlap(range1, range2) {
-		if (range1.lineEnd < range2.lineStart) return false;
-		if (range1.lineStart > range2.lineEnd) return false;
+	function isBefore(range1, range2) {
+		/* console.log(range1)
+		console.log(range2)
+		console.log("range1.lineEnd < range2.lineStart ", range1.lineEnd < range2.lineStart)
+		console.log("range1.lineEnd === range2.lineStart ", range1.lineEnd === range2.lineStart)
+		console.log("range1.indexEnd <= range2.indexStart ", range1.indexEnd <= range2.indexStart) */
 
-		if (range1.lineStart === range1.lineEnd && range2.lineStart === range2.lineEnd && range1.lineStart === range2.lineStart) {
-			return range1.indexEnd > range2.indexStart && range1.indexStart < range2.indexEnd;
-		}
-
-		if (range1.lineEnd === range2.lineStart) {
-			if (range1.lineEnd === range1.lineStart && range2.lineStart === range2.lineEnd) {
-				return range1.indexEnd > range2.indexStart && range1.indexStart < range2.indexEnd;
-			}
-			return range1.indexEnd > range2.indexStart;
-		}
-		if (range2.lineEnd === range1.lineStart) {
-			if (range2.lineEnd === range2.lineStart && range1.lineStart === range1.lineEnd) {
-				return range2.indexEnd > range1.indexStart && range2.indexStart < range1.indexEnd;
-			}
-			return range2.indexEnd > range1.indexStart;
-		}
-
-		return true;
+		const result = range1.lineEnd < range2.lineStart || (range1.lineEnd === range2.lineStart && range1.indexEnd <= range2.indexStart)
+		/* console.log("final result: ", result) */
+		return result;
 	}
+
+	function doRangesOverlap(range1, range2) {
+		return !(isBefore(range1, range2) || isBefore(range2, range1));
+	}
+
+	function containsNonFullLineIssueInLocation(location) {
+		/* const normalizedLocation = {
+			lineStart: location.lineStart - 1,
+			lineEnd: location.lineEnd - 1,
+			indexStart: location.indexStart,
+			indexEnd: location.indexEnd
+		}; */
+
+		if (predicateErrors != "true") {
+			if (stratificationWarningRanges.some(range => {
+				if (doRangesOverlap(range, location)) {
+					return true;
+				}
+				return false;
+			})) return true;
+
+			if (stratificationErrorRanges.some(range => {
+				if (doRangesOverlap(range, location)) {
+					return true;
+				}
+				return false;
+			})) return true;
+		}
+
+		if (syntax != "true") {
+			if (syntaxErrorRanges.some(range => {
+				if (doRangesOverlap(range, location)) {
+					return true;
+				}
+				return false;
+			})) return true;
+		}
+		
+		return false;
+	}
+
+	function serializeRange(range) {
+		return `${range.lineStart}:${range.lineEnd}:${range.indexStart}:${range.indexEnd}`;
+	}
+
+	function removeDuplicates(ranges, messages) {
+		const map = new Map();
+
+		for (let i = 0; i < ranges.length; i++) {
+			const key = serializeRange(ranges[i]);
+
+			if (map.has(key)) {
+				map.get(key).message += ' | ' + messages[i];
+			} else {
+				map.set(key, {
+					range: ranges[i],
+					message: messages[i]
+				});
+			}
+		}
+
+		const dedupedRanges = [];
+		const dedupedMessages = [];
+
+		for (const {range, message} of map.values()) {
+			dedupedRanges.push(range);
+			dedupedMessages.push(message);
+		}
+
+		return {ranges: dedupedRanges, messages: dedupedMessages};
+ 	}
+
+	let fullLineWarningRanges = orderingWarningRanges.concat(noCommentWarningRangesFinal);
+	let fullLineWarningMessages = orderingWarningMessages.concat(noCommentWarningMessages);
+
+	// Do a final check to ensure that ordering and no comment warnings only appear in lines that do not have any other errors/warnings
+	// This is done to avoid creating lines with entagled errors and warnings. Given that ordering and no comment warnings underline the whole line, we give priority
+	// to errors and warnings that are specific to the predicate (i.e. there can only be full line warnings/errors if there are no other errors/warnings in the line) 
+	let finalFullLineWarningRanges = [];
+	let finalFullLineWarningMessages = [];
+
+	for (const range of fullLineWarningRanges) {
+		if (!containsNonFullLineIssueInLocation(range)) {
+			finalFullLineWarningRanges.push(range);
+			finalFullLineWarningMessages.push(fullLineWarningMessages[fullLineWarningRanges.indexOf(range)]);
+		}
+	}
+
+	// This will remove duplicate ranges from finalFullLineWarningRanges and collapse their messages
+	const result = removeDuplicates(finalFullLineWarningRanges, finalFullLineWarningMessages);
+	finalFullLineWarningRanges = result.ranges;
+	finalFullLineWarningMessages =  result.messages;
 
 	function containsErrorInLocation(location) {
 		const normalizedLocation = {
@@ -530,22 +640,14 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			indexStart: location.indexStart,
 			indexEnd: location.indexEnd
 		};
+		
+		finalFullLineWarningRanges.forEach(range => {
+			if(doRangesOverlap(range, normalizedLocation)) {
+				return true;
+			}
+		});
 
-		if(commentWarnings != "true") {
-			noCommentWarningRanges.forEach(range => {
-				if(doRangesOverlap(range, normalizedLocation)) {
-					return true;
-				}
-			});
-		}
-
-		if(orderErrors != "true") {
-			orderingWarningRanges.forEach(range => {
-				if(doRangesOverlap(range, normalizedLocation)) {
-					return true;
-				}
-			});
-		}
+		
 
 		if(predicateErrors != "true") {
 			stratificationWarningRanges.forEach(range => {
@@ -557,44 +659,6 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 		return false;
 	}
-
-	let noCommentWarningMessages = [];
-
-	const checker = [];
-
-	for (const range of noCommentWarningRanges) {
-		const tmp = JSON.stringify(range);
-		if (!checker.includes(JSON.stringify(range)))
-			checker.push(tmp)
-	}
-
-	let noCommentWarningRangesFinal = [];
-
-	if (commentWarnings != "true") {
-		for (const range of checker) {
-			if(!containsErrorInLocation(JSON.parse(range))) {
-				noCommentWarningRangesFinal.push(JSON.parse(range))
-			}
-		}
-
-		for (const range of noCommentWarningRangesFinal) {
-			noCommentWarningMessages.push(`Warning. This line is defining a predicate without proper commenting (line ${range.lineStart + 1}).`);
-		}
-	}
-
-	let fullLineWarningRanges = orderingWarningRanges.concat(noCommentWarningRangesFinal);
-	let fullLineWarningMessages = orderingWarningMessages.concat(noCommentWarningMessages);
-
-	// Do a final check to ensure that ordering warnings only appear in lines that do not have any other errors/warnings
-	// This is done to avoid creating lines with entagled errors and warnings. Given that ordering warnings underline the whole line, we give priority
-	// to errors and warnings that are specific to the predicate (i.e. there can only be full line warnings/errors if there are no other errors/warnings in the line) 
-	let finalFullLineWarningRanges = [];
-	let finalFullLineWarningMessages = [];
-
-	// TODO: for each range in fullLineWarningRanges, check if it overlaps with any error range, if it does, skip it
-	// if it does not, add it to finalFullLineWarningRanges and finalFullLineWarningMessages
-
-
 
 	let predicateHoverRanges = [];
 	let predicateHoverMessages = [];
@@ -644,11 +708,11 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			});		
 		}
 	}
-
+	
 	return [syntaxErrorRanges.concat(stratificationErrorRanges), 
-		orderingWarningRanges.concat(stratificationWarningRanges.concat(noCommentWarningRangesFinal)),
+		finalFullLineWarningRanges.concat(stratificationWarningRanges),
 		syntaxErrorMessages.concat(stratificationErrorMessages), 
-		orderingWarningMessages.concat(stratificationWarningMessages.concat(noCommentWarningMessages)),
+		finalFullLineWarningMessages.concat(stratificationWarningMessages),
 		predicateHoverRanges, predicateHoverMessages
 	 ];
 

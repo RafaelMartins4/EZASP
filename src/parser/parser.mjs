@@ -926,8 +926,8 @@ class VerboseASPListener extends ASPListener {
 
     exitProgram(ctx) {
         /* console.log("lineRanges:");
-        console.log(this.lineRanges);
-
+        console.log(this.lineRanges); */
+        /*
         console.log("definedPredicates:");
         console.log(this.definedPredicates);
 
@@ -956,7 +956,6 @@ class VerboseASPListener extends ASPListener {
     }
 
     getLineRanges() {
-        console.log('lineRanges :', this.lineRanges);
         return this.lineRanges;
     }
 }
