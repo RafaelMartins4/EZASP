@@ -1,3 +1,4 @@
+const { use } = require('chai');
 const { loadParser } = require('../parser/parser-wrapper.cjs');
 
 const MAC_OS = 1;
@@ -91,12 +92,13 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		});
 	}
 
-	//console.log("Syntax Errors: ", syntaxErrorRanges);
-
 	// Ordering Errors
 
 	let orderingWarningRanges = [];
 	let orderingWarningMessages = [];
+
+	let noGeneratorWarningRanges = [];
+	let noGeneratorWarningMessages = [];
 
 	const constructTypes = parserResult.constructTypes;
 
@@ -151,50 +153,55 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						warningMessage = 'Warning: Constants must be at the beginning of the program.';
 						break;
 					case 'Fact':
-						warningMessage = 'Warning: Facts must be at the beginning, or between constants and choice rules.';
+						warningMessage = 'Warning: Facts must be at the beginning, or between Constants and Choice Rules.';
 						break;
 					case 'ChoiceRule':
-						warningMessage = 'Warning: Choices must be at the beginning, or between facts and definitions.';
+						warningMessage = 'Warning: Choice Rules must be at the beginning, or between Facts and Definition Rules.';
 						break;
 					case 'DefiniteRule':
-						warningMessage = 'Warning: Definitions must be between choices and constraints.';
+						warningMessage = 'Warning: Definition Rules must be between Choice Rules and Constraints.';
 						break;
 					case 'Constraint':
-						warningMessage = 'Warning: Constraints must be between definitions and either optimization or show statements.';
+						warningMessage = 'Warning: Constraints must be between Definition Rules and either Optimization or Show Statements.';
 						break;
 					case 'Optimization':
-						warningMessage = 'Warning: Optimization statements must appear after constraints and before show statements.';
+						warningMessage = 'Warning: Optimization statements must appear after Constraints and before Show Statements.';
 						break;
 					case 'Show':
-						warningMessage = 'Warning: Show statements must appear at the end of the program.';
+						warningMessage = 'Warning: Show Statements must appear at the end of the program.';
 						break;
 					default:
 						warningMessage = `Warning: "${construct.type}" is out of order.`;
 				}
 
 				if(!hasGenerator && currentIndex > 2) {
-					orderingWarningMessages.push(warningMessage + ' | ' + generatorWarningMessage);
+					orderingWarningMessages.push(warningMessage);
+					noGeneratorWarningMessages.push(generatorWarningMessage);
+					noGeneratorWarningRanges.push({
+						lineStart: construct.lineStart - 1,
+						lineEnd: construct.lineEnd - 1,
+						indexStart: construct.indexStart,
+						indexEnd: construct.indexEnd
+					});
 					hasGenerator = true; // Set true to avoid pushing the message again
 				} else {
 					orderingWarningMessages.push(warningMessage);
 				}
 			} else {
 				if(!hasGenerator && currentIndex > 2) {
-					orderingWarningRanges.push({
+					noGeneratorWarningRanges.push({
 						lineStart: construct.lineStart - 1,
 						lineEnd: construct.lineEnd - 1,
 						indexStart: construct.indexStart,
 						indexEnd: construct.indexEnd
 					});
-					orderingWarningMessages.push(generatorWarningMessage);
+					noGeneratorWarningMessages.push(generatorWarningMessage);
 					hasGenerator = true; // Set true to avoid pushing the message again
 				}
 				lastSeenIndex = currentIndex;
 			}
 		}
 	}
-
-	//console.log("Ordering Errors: ", orderingWarningRanges);
 
 	// Stratification Errors
 
@@ -240,8 +247,10 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						indexEnd: position.indexEnd
 					}
 
-					stratificationErrorRanges.push(range);
-					stratificationErrorMessages.push(`Error: Predicate ${usedPredicateKey} is never defined.`);
+					if(!containsSyntaxErrorInLocation(range)) {
+						stratificationErrorRanges.push(range);
+						stratificationErrorMessages.push(`Error: Predicate ${usedPredicateKey} is never defined.`);
+					}
 				}
 			});
 		} else {
@@ -262,15 +271,15 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						indexStart: usedPosition.indexStart,
 						indexEnd: usedPosition.indexEnd
 					};
-					stratificationWarningRanges.push(range);
-					stratificationWarningMessages.push(`Warning: Predicate ${usedPredicateKey} is used before it is defined.`);
+
+					if(!containsSyntaxErrorInLocation(range) && !containsStratificationErrorInLocation(range)) {
+						stratificationWarningRanges.push(range);
+						stratificationWarningMessages.push(`Warning: Predicate ${usedPredicateKey} is used before it is defined.`);
+					}
 				}	
 			});
 		}		
 	}
-
-	//console.log("Stratification Errors: ", stratificationErrorRanges);
- 	//console.log("Stratification Warnings: ", stratificationWarningRanges);
 
 
 	let symbol;
@@ -352,7 +361,6 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	const definitionMessages = new Map();
 	const noCommentLines = new Map();
 	const comments = preprocessComments(textRaw);
-
 	
 	for(const [predicateKey, locations] of definedPredicates.entries()) {
 		locations.forEach(location => {
@@ -429,7 +437,6 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			}
 
 			// Process the noCommentLines to add a 'No comment' message to the definitionMessages map
-
 			for (const [predicateKey, lines] of extraNoCommentLines.entries()) {
 				if (!definitionMessages.has(predicateKey)) {
 					definitionMessages.set(predicateKey, []);
@@ -447,38 +454,37 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let noCommentWarningRanges = [];
 	let noCommentWarningLines = [];
 
-	for(const [noCommentKey, locations] of noCommentLines.entries()) {
-		locations.forEach(location => {
-			if(!noCommentWarningLines.includes(location.lineStart)) {
-				noCommentWarningLines.push(location.lineStart);
-			}
-		});
-	}
-
-	noCommentWarningLines.forEach(line => {
-		lineRanges.get(line).forEach(range => {
-			noCommentWarningRanges.push({
-				lineStart: range.lineStart - 1,
-				lineEnd: range.lineEnd - 1,
-				indexStart: range.indexStart,
-				indexEnd: range.indexEnd
-			});
-		});
-	});
-
 	let noCommentWarningMessages = [];
-
-	const checker = [];
-
-	for (const range of noCommentWarningRanges) {
-		const tmp = JSON.stringify(range);
-		if (!checker.includes(JSON.stringify(range)))
-			checker.push(tmp)
-	}
-
 	let noCommentWarningRangesFinal = [];
 
-	if (commentWarnings != "true") {
+	if(commentWarnings != "true") {
+		for(const [noCommentKey, locations] of noCommentLines.entries()) {
+			locations.forEach(location => {
+				if(!noCommentWarningLines.includes(location.lineStart)) {
+					noCommentWarningLines.push(location.lineStart);
+				}
+			});
+		}
+
+		noCommentWarningLines.forEach(line => {
+			lineRanges.get(line).forEach(range => {
+				noCommentWarningRanges.push({
+					lineStart: range.lineStart - 1,
+					lineEnd: range.lineEnd - 1,
+					indexStart: range.indexStart,
+					indexEnd: range.indexEnd
+				});
+			});
+		});
+	
+		const checker = [];
+
+		for (const range of noCommentWarningRanges) {
+			const tmp = JSON.stringify(range);
+			if (!checker.includes(JSON.stringify(range)))
+				checker.push(tmp)
+		}
+
 		for (const range of checker) {
 			if(!containsErrorInLocation(JSON.parse(range))) {
 				noCommentWarningRangesFinal.push(JSON.parse(range))
@@ -503,45 +509,14 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	}
 
 	function isBefore(range1, range2) {
-		/* console.log(range1)
-		console.log(range2)
-		console.log("range1.lineEnd < range2.lineStart ", range1.lineEnd < range2.lineStart)
-		console.log("range1.lineEnd === range2.lineStart ", range1.lineEnd === range2.lineStart)
-		console.log("range1.indexEnd <= range2.indexStart ", range1.indexEnd <= range2.indexStart) */
-
-		const result = range1.lineEnd < range2.lineStart || (range1.lineEnd === range2.lineStart && range1.indexEnd <= range2.indexStart)
-		/* console.log("final result: ", result) */
-		return result;
+		return range1.lineEnd < range2.lineStart || (range1.lineEnd === range2.lineStart && range1.indexEnd <= range2.indexStart)
 	}
 
 	function doRangesOverlap(range1, range2) {
 		return !(isBefore(range1, range2) || isBefore(range2, range1));
 	}
 
-	function containsNonFullLineIssueInLocation(location) {
-		/* const normalizedLocation = {
-			lineStart: location.lineStart - 1,
-			lineEnd: location.lineEnd - 1,
-			indexStart: location.indexStart,
-			indexEnd: location.indexEnd
-		}; */
-
-		if (predicateErrors != "true") {
-			if (stratificationWarningRanges.some(range => {
-				if (doRangesOverlap(range, location)) {
-					return true;
-				}
-				return false;
-			})) return true;
-
-			if (stratificationErrorRanges.some(range => {
-				if (doRangesOverlap(range, location)) {
-					return true;
-				}
-				return false;
-			})) return true;
-		}
-
+	function containsSyntaxErrorInLocation(location) {
 		if (syntax != "true") {
 			if (syntaxErrorRanges.some(range => {
 				if (doRangesOverlap(range, location)) {
@@ -550,8 +525,41 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				return false;
 			})) return true;
 		}
-		
+
 		return false;
+	}
+
+	function containsStratificationErrorInLocation(location) {
+		if (predicateErrors != "true") {
+			if (stratificationErrorRanges.some(range => {
+				if (doRangesOverlap(range, location)) {
+					return true;
+				}
+				return false;
+			})) return true;
+		}
+
+		return false
+	}
+
+	function containsStratificationWarningInLocation(location) {
+		if (predicateErrors != "true") {
+			if (stratificationWarningRanges.some(range => {
+				if (doRangesOverlap(range, location)) {
+					return true;
+				}
+				return false;
+			})) return true;
+		}
+
+		return false;
+	}
+
+
+	function containsNonFullLineIssueInLocation(location) {
+		return containsSyntaxErrorInLocation(location) ||
+			containsStratificationErrorInLocation(location) ||
+			containsStratificationWarningInLocation(location);
 	}
 
 	function serializeRange(range) {
@@ -562,7 +570,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		const map = new Map();
 
 		for (let i = 0; i < ranges.length; i++) {
-			const key = serializeRange(ranges[i]);
+			const key = serializeRange(ranges[i].range);
 
 			if (map.has(key)) {
 				map.get(key).message += ' | ' + messages[i];
@@ -585,8 +593,28 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		return {ranges: dedupedRanges, messages: dedupedMessages};
  	}
 
-	let fullLineWarningRanges = orderingWarningRanges.concat(noCommentWarningRangesFinal);
-	let fullLineWarningMessages = orderingWarningMessages.concat(noCommentWarningMessages);
+	function concatenateFullLineWarnings() {
+		let ordering = orderingWarningRanges.map(range => ({
+			range,
+			type: 'ordering',
+		}));
+
+		let noGenerator = noGeneratorWarningRanges.map(range => ({
+			range,
+			type: 'noGenerator',
+		}));
+
+		let noComment = noCommentWarningRangesFinal.map(range => ({
+			range,
+			type: 'noComment',
+		}));
+
+		return [...ordering, ...noGenerator, ...noComment]
+	}
+	
+	// This is done to differentiate between the different types of full line warnings (ordering, no generator, no comment), which is useful when displaying them in the editor
+	let fullLineWarningRanges = concatenateFullLineWarnings();	
+	let fullLineWarningMessages = orderingWarningMessages.concat(noGeneratorWarningMessages.concat(noCommentWarningMessages));
 
 	// Do a final check to ensure that ordering and no comment warnings only appear in lines that do not have any other errors/warnings
 	// This is done to avoid creating lines with entagled errors and warnings. Given that ordering and no comment warnings underline the whole line, we give priority
@@ -594,10 +622,11 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let finalFullLineWarningRanges = [];
 	let finalFullLineWarningMessages = [];
 
-	for (const range of fullLineWarningRanges) {
+	for (const warning of fullLineWarningRanges) {
+		const range = warning.range;
 		if (!containsNonFullLineIssueInLocation(range)) {
-			finalFullLineWarningRanges.push(range);
-			finalFullLineWarningMessages.push(fullLineWarningMessages[fullLineWarningRanges.indexOf(range)]);
+			finalFullLineWarningRanges.push(warning);
+			finalFullLineWarningMessages.push(fullLineWarningMessages[fullLineWarningRanges.indexOf(warning)]);
 		}
 	}
 
@@ -641,13 +670,12 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			indexEnd: location.indexEnd
 		};
 		
-		finalFullLineWarningRanges.forEach(range => {
+		finalFullLineWarningRanges.forEach(warning => {
+			const range = warning.range;
 			if(doRangesOverlap(range, normalizedLocation)) {
 				return true;
 			}
 		});
-
-		
 
 		if(predicateErrors != "true") {
 			stratificationWarningRanges.forEach(range => {
@@ -708,12 +736,18 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 			});		
 		}
 	}
-	
+
+	console.log(constructTypes)
+
 	return [syntaxErrorRanges.concat(stratificationErrorRanges), 
-		finalFullLineWarningRanges.concat(stratificationWarningRanges),
+		finalFullLineWarningRanges, 
+		stratificationWarningRanges,
 		syntaxErrorMessages.concat(stratificationErrorMessages), 
-		finalFullLineWarningMessages.concat(stratificationWarningMessages),
-		predicateHoverRanges, predicateHoverMessages
+		finalFullLineWarningMessages, 
+		stratificationWarningMessages,
+		predicateHoverRanges, predicateHoverMessages,
+		definedPredicates, usedPredicates, 
+		constructTypes
 	 ];
 
 	

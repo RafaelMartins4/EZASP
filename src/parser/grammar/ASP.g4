@@ -88,7 +88,7 @@ upperbound: integer;
 // Tokens
 BLOCK_COMMENT : '%*' .*? '*%';
 UNCLOSED_COMMENT : '%*' ~[*]* ('*' ~[%])* EOF;
-LINE_COMMENT: '%' ~[*\r\n] ~[\r\n]* [\r\n];
+LINE_COMMENT: '%' ~[*\r\n] ~[\r\n]* [\r\n]?;
 DOT: '.';
 EOWC: ']';           // End of weak constraint
 CONSTANT: (UNDERSCORE)*[a-z][a-zA-Z0-9_]*;
