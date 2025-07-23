@@ -141,7 +141,7 @@ function getExtraFiles(activeEditor){
 let hoverDisposable;
 async function loadThings(activeEditor, fileName, diagnosticCollection) {
     let results = await getResults(activeEditor.document.getText(), fileName, getExtraFiles(activeEditor));
-	activeEditor.setDecorations(underlineRed, results[1]);
+	//activeEditor.setDecorations(underlineRed, results[1]);
     //activeEditor.setDecorations(underlineYellow, results[2]);
 
 	//  [data, errorRanges, fullLineWarningRanges, stratificationWarningRanges, predicateHoverRanges, 
@@ -373,7 +373,7 @@ function fixOrderingHandler(document) {
 
     const expandedRanges = [];
 
-    // Step 1: Expand Downwards
+    // Step 1: Extend Downwards
     for (const construct of constructTypes) {
         let { lineStart, lineEnd, indexStart, indexEnd, type } = construct;
         let endLine = lineEnd - 1;
@@ -405,6 +405,10 @@ function fixOrderingHandler(document) {
                     blockLine++;
                     blockIndex = 0;
                 }
+
+				// If the closing token is found AFTER the construct's line, don't search for any other comments
+				if(i > endLine)
+					break;
 		
                 if (!foundEnd) {
 					// Shouldn't happen but check anyways
@@ -431,8 +435,11 @@ function fixOrderingHandler(document) {
         });
     }
 
+	console.log('expanded ranges:')
+	console.log(expandedRanges)
 
-    // Step 2: Expand Upwards
+
+    // Step 2: Extend Upwards
     const finalRanges = [];
 
 	for (let k = 0; k < expandedRanges.length; k++) {
@@ -453,7 +460,7 @@ function fixOrderingHandler(document) {
 			if (rest.startsWith('%') || rest.startsWith('%*')) {
 				// Found a comment — adjust current construct to begin here
 				adjustedLine = scanLine;
-				adjustedIndex = 0;
+				adjustedIndex = scanIndex;
 				break;
 			}
 
@@ -473,6 +480,9 @@ function fixOrderingHandler(document) {
 			indexEnd: curr.indexEnd
 		});
 	}
+
+	console.log('final ranges: ')
+	console.log(finalRanges)
 
 	// Step 3: Reorganize constructs by type
 	const ezaspOrder = [
@@ -601,13 +611,13 @@ function reorderSection(constructs) {
 
 	const dependencyGraph = buildDependencyGraph(constructs);
 
-	console.log('Dependency Graph:');
+	/* console.log('Dependency Graph:');
 	console.log(dependencyGraph);
-
+ */
 	const sortResult = topologicalSort(dependencyGraph);
 
-	console.log('Topological Sort Result:');
-	console.log(sortResult);
+	/* console.log('Topological Sort Result:');
+	console.log(sortResult); */
 
 	return sortResult;
 }

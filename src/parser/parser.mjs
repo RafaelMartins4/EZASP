@@ -2,6 +2,7 @@ import antlr4 from 'antlr4';
 import ASPLexer from '../../generated/src/parser/grammar/ASPLexer.mjs';
 import ASPParser from '../../generated/src/parser/grammar/ASPParser.mjs';
 import ASPListener from '../../generated/src/parser/grammar/ASPListener.mjs';
+import { error } from 'console';
 
 let errorRangeSize = 2;
 
@@ -58,16 +59,24 @@ class ASPParserErrorListener extends antlr4.error.ErrorListener {
             } else {
                 indexEnd += errorRangeSize - charPositionInLine; 
             }
-        }
-
-         // Check if the error is at the end of the line
-        const currentLineText = tokenStream.tokenSource.inputStream.strdata.split('\n')[line - 1];
-        
-        if (indexEnd > currentLineText.length) {
-            // Move to the next line if it exists
-            if (line < tokenStream.tokenSource.inputStream.strdata.split('\n').length) {
-                lineEnd = line + 1;
-                indexEnd = charPositionInLine - currentLineText.length + errorRangeSize;
+            
+        } else {
+            // Check if the error is at the end of the line
+            const currentLineText = tokenStream.tokenSource.inputStream.strdata.split('\n')[line - 1];
+            
+            if (indexEnd > currentLineText.length) {
+                const constructEnd = currentLineText.slice(charPositionInLine);
+                if(constructEnd.includes('.') || constructEnd.includes(']')) {
+                    // The construct ends with a terminator, so extend the range backwards to guarantee consistent underline length
+                    indexEnd = currentLineText.length;
+                    indexStart = Math.max(0, indexEnd - 2 * errorRangeSize - 1);
+                } else {
+                    // Move to the next line if it exists
+                    if (line < tokenStream.tokenSource.inputStream.strdata.split('\n').length) {
+                        lineEnd = line + 1;
+                        indexEnd = charPositionInLine - currentLineText.length + errorRangeSize + 1;
+                    }
+                }
             }
         }
 
@@ -102,10 +111,9 @@ class ASPLexerErrorListener extends antlr4.error.ErrorListener {
 
     syntaxError(recognizer, offendingSymbol, line, charPositionInLine, msg, e) {
 
-        // Access the input stream directly from the recognizer
-        const inputStream = recognizer._input; // `_input` contains the input stream
-        const inputText = inputStream.strdata; // Full input text
-        const lines = inputText.split('\n'); // Split input into lines
+        const inputStream = recognizer._input;
+        const inputText = inputStream.strdata;
+        const lines = inputText.split('\n'); 
 
         let lineStart = line;
         let lineEnd = line;
@@ -983,7 +991,10 @@ export function parse(input) {
         const definedPredicates = listener.getDefinedPredicates();
         const usedPredicates = listener.getUsedPredicates();
         const statementsByLine = listener.getStatementsByLine();
-        const lineRanges = listener.getLineRanges(); 
+        const lineRanges = listener.getLineRanges();
+
+        console.log('Syntax errors:')
+        console.log(parserSyntaxErrors);
 
         return {syntaxErrors: [...parserSyntaxErrors, ...listenerSyntaxErrors], tokenErrors, constructTypes, definedPredicates, usedPredicates, statementsByLine, lineRanges};
 
