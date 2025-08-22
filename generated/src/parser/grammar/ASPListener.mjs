@@ -68,21 +68,21 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#defined_atom.
-	enterDefined_atom(ctx) {
+	// Enter a parse tree produced by ASPParser#choiceHead_atoms.
+	enterChoiceHead_atoms(ctx) {
 	}
 
-	// Exit a parse tree produced by ASPParser#defined_atom.
-	exitDefined_atom(ctx) {
+	// Exit a parse tree produced by ASPParser#choiceHead_atoms.
+	exitChoiceHead_atoms(ctx) {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#used_atom.
-	enterUsed_atom(ctx) {
+	// Enter a parse tree produced by ASPParser#choiceBody_atoms.
+	enterChoiceBody_atoms(ctx) {
 	}
 
-	// Exit a parse tree produced by ASPParser#used_atom.
-	exitUsed_atom(ctx) {
+	// Exit a parse tree produced by ASPParser#choiceBody_atoms.
+	exitChoiceBody_atoms(ctx) {
 	}
 
 
@@ -344,6 +344,33 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ASPParser#tuple.
 	exitTuple(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_term.
+	enterConstant_term(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_term.
+	exitConstant_term(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_functionTerm.
+	enterConstant_functionTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_functionTerm.
+	exitConstant_functionTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_tuple.
+	enterConstant_tuple(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_tuple.
+	exitConstant_tuple(ctx) {
 	}
 
 

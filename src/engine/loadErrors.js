@@ -737,8 +737,6 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
-	console.log(constructTypes)
-
 	return [syntaxErrorRanges.concat(stratificationErrorRanges), 
 		finalFullLineWarningRanges, 
 		stratificationWarningRanges,

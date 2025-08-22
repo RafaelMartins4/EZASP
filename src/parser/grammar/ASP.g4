@@ -5,7 +5,7 @@ program: (statement | line_comment | block_comment | unclosed_comment)* EOF;
 statement: constant | fact | choice_rule | definite_rule | constraint | optimization | weak_constraint | show;
 
 constant: 
-    '#const' CONSTANT '=' term DOT;
+    '#const' CONSTANT '=' constant_term DOT;
 
 // Types of Rules: Facts, Choice Rules, Definite Rules, Integrity Constraints
 fact: 
@@ -16,10 +16,10 @@ choice_rule:
 
 choice: (lowerbound)? '{' choice_body? '}' (upperbound)?;
 
-choice_body: defined_atom (';' defined_atom)* (':' (used_atom (',' | ';' used_atom)* )? )?;
+choice_body: choiceHead_atoms (';' choiceHead_atoms)* (':' (choiceBody_atoms (',' | ';' choiceBody_atoms)* )? )?;
 
-defined_atom: atom;  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
-used_atom: atom;
+choiceHead_atoms: literal | NOT? assignment | NOT? builtIn_atom;  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
+choiceBody_atoms: literal | NOT? assignment | NOT? builtIn_atom;
 
 definite_rule:
        head ':-' body DOT;
@@ -32,7 +32,7 @@ head:
 body: 
        rule_atoms (',' rule_atoms)*;
 
-rule_atoms: literal | builtIn_atom | aggregate_atom | assignment | NOT? choice;
+rule_atoms: literal | NOT? builtIn_atom | aggregate_atom | NOT? assignment | NOT? choice;
 
 // Optimization statements
 optimization: 
@@ -65,9 +65,9 @@ atom: CONSTANT ('(' term (',' term)* ')')?;
 
 builtIn_atom: term COMPARATOR term;
 
-aggregate_atom: AGGREGATE_FUNCTION '{' aggregate_element (';' aggregate_element)* '}' (COMPARATOR term)?;
-aggregate_element: (term (',' term)*)? (':' (aggregate_literal (',' aggregate_literal)*)?)?;
-aggregate_literal: literal | builtIn_atom;
+aggregate_atom: AGGREGATE_FUNCTION '{' (aggregate_element (';' aggregate_element)*)? '}' (COMPARATOR term)?;
+aggregate_element: term (',' term)* ':' aggregate_literal (',' aggregate_literal)*;
+aggregate_literal: literal | NOT? builtIn_atom;
 
 assignment: assignee '=' assigned_value;
 assignee: term | aggregate_atom | literal;
@@ -79,6 +79,10 @@ simpleTerm: integer | CONSTANT | STRING | VARIABLE | UNDERSCORE | SUP | INF;
 functionTerm: CONSTANT '(' term (',' term)* ')';
 tuple: '(' (term (',' term)*)? ')';
 
+constant_term: integer | CONSTANT | STRING | SUP | INF | constant_functionTerm | constant_tuple;
+constant_functionTerm: CONSTANT '(' (constant_term (',' constant_term)*)? ')';
+constant_tuple: '(' (constant_term (',' constant_term)* )? ')';
+
 integer: NUMBER | INTERVAL;
 weight: integer;
 priority: integer;
@@ -86,6 +90,7 @@ lowerbound: integer;
 upperbound: integer;
 
 // Tokens
+NOT: 'not';                      // ensures that 'not' is treated as a standalone word
 BLOCK_COMMENT : '%*' .*? '*%';
 UNCLOSED_COMMENT : '%*' ~[*]* ('*' ~[%])* EOF;
 LINE_COMMENT: '%' ~[*\r\n] ~[\r\n]* [\r\n]?;
@@ -101,6 +106,5 @@ INTERVAL: (NUMBER '..' NUMBER);
 STRING: '"' (~('"' | '\n' | '\r'))* '"';
 COMPARATOR: '<' | '<=' | '==' | '!=' | '>=' | '>';
 AGGREGATE_FUNCTION: '#count' | '#sum' | '#max' | '#min';
-NOT: ' not ';                      // ensures that 'not' is treated as a standalone word
 CLASSICAL_NEGATION: '-';
 WS: [ \t\r\n]+ -> skip;
