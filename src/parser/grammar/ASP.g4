@@ -14,9 +14,9 @@ fact:
 choice_rule:
        choice ':-' body DOT;
 
-choice: (lowerbound)? '{' choice_body? '}' (upperbound)?;
+choice: (lowerbound)? '{' (choice_element (';' choice_element)*)? '}' (upperbound)?;
 
-choice_body: choiceHead_atoms (';' choiceHead_atoms)* (':' (choiceBody_atoms (',' | ';' choiceBody_atoms)* )? )?;
+choice_element: choiceHead_atoms (':' (choiceBody_atoms (',' choiceBody_atoms)* )? )?;
 
 choiceHead_atoms: literal | NOT? assignment | NOT? builtIn_atom;  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
 choiceBody_atoms: literal | NOT? assignment | NOT? builtIn_atom;
@@ -28,18 +28,20 @@ constraint:
        ':-' body DOT;
 
 head: 
-       rule_atoms (';' rule_atoms)*;
+       head_atoms (';' head_atoms)* | choice | aggregate_atom_head;
 body: 
-       rule_atoms (',' rule_atoms)*;
+       body_atoms (',' body_atoms)*;
 
-rule_atoms: literal | NOT? builtIn_atom | aggregate_atom | NOT? assignment | NOT? choice;
+head_atoms: literal | NOT? builtIn_atom | assignment;
+
+body_atoms: literal | NOT? builtIn_atom | aggregate_atom_body | assignment | choice;
 
 // Optimization statements
 optimization: 
-       '#minimize' '{' optimizationBody (';' optimizationBody)* '} DOT'
-       | '#maximize' '{' optimizationBody (';' optimizationBody)* '}' DOT;
+       '#minimize' '{' (optimizationBody (';' optimizationBody)*)? '}' DOT
+       | '#maximize' '{' (optimizationBody (';' optimizationBody)*)? '}' DOT;
 
-optimizationBody: (weight '@' priority ',')? aggregate_element;
+optimizationBody: (weight '@' priority ',')? aggregate_element_optimization;
 
 // Weak Constraint
 weak_constraint: 
@@ -61,17 +63,23 @@ line_comment: LINE_COMMENT;
 
 literal: NOT? classical_atom;
 classical_atom: CLASSICAL_NEGATION? atom;
-atom: CONSTANT ('(' term (',' term)* ')')?;
+atom: CONSTANT ('(' (term (',' term)*)? ')')?;
 
 builtIn_atom: term COMPARATOR term;
 
-aggregate_atom: AGGREGATE_FUNCTION '{' (aggregate_element (';' aggregate_element)*)? '}' (COMPARATOR term)?;
-aggregate_element: term (',' term)* ':' aggregate_literal (',' aggregate_literal)*;
+aggregate_atom_head: AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}' (COMPARATOR term)?;
+aggregate_element_head: term (',' term)* ':' aggregate_literal (',' aggregate_literal)*;   // Separating aggregate elements because clingo accepts slightly different aggregates depending if it's placed on head or body
+
+aggregate_atom_body: AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' (COMPARATOR term)?;
+aggregate_element_body: (term (',' term)*)? (':' (aggregate_literal (',' aggregate_literal)*)?)?;
+
+aggregate_element_optimization: term (',' term)* (':' (aggregate_literal (',' aggregate_literal)*)?)?;
+
 aggregate_literal: literal | NOT? builtIn_atom;
 
 assignment: assignee '=' assigned_value;
-assignee: term | aggregate_atom | literal;
-assigned_value: term | classical_atom | aggregate_atom;
+assignee: NOT? term | aggregate_atom_body | literal;
+assigned_value: term | classical_atom | aggregate_atom_body;
 
 // Terms
 term: simpleTerm | functionTerm | tuple;

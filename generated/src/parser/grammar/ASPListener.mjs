@@ -59,12 +59,12 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#choice_body.
-	enterChoice_body(ctx) {
+	// Enter a parse tree produced by ASPParser#choice_element.
+	enterChoice_element(ctx) {
 	}
 
-	// Exit a parse tree produced by ASPParser#choice_body.
-	exitChoice_body(ctx) {
+	// Exit a parse tree produced by ASPParser#choice_element.
+	exitChoice_element(ctx) {
 	}
 
 
@@ -122,12 +122,21 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#rule_atoms.
-	enterRule_atoms(ctx) {
+	// Enter a parse tree produced by ASPParser#head_atoms.
+	enterHead_atoms(ctx) {
 	}
 
-	// Exit a parse tree produced by ASPParser#rule_atoms.
-	exitRule_atoms(ctx) {
+	// Exit a parse tree produced by ASPParser#head_atoms.
+	exitHead_atoms(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#body_atoms.
+	enterBody_atoms(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#body_atoms.
+	exitBody_atoms(ctx) {
 	}
 
 
@@ -257,21 +266,48 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#aggregate_atom.
-	enterAggregate_atom(ctx) {
+	// Enter a parse tree produced by ASPParser#aggregate_atom_head.
+	enterAggregate_atom_head(ctx) {
 	}
 
-	// Exit a parse tree produced by ASPParser#aggregate_atom.
-	exitAggregate_atom(ctx) {
+	// Exit a parse tree produced by ASPParser#aggregate_atom_head.
+	exitAggregate_atom_head(ctx) {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#aggregate_element.
-	enterAggregate_element(ctx) {
+	// Enter a parse tree produced by ASPParser#aggregate_element_head.
+	enterAggregate_element_head(ctx) {
 	}
 
-	// Exit a parse tree produced by ASPParser#aggregate_element.
-	exitAggregate_element(ctx) {
+	// Exit a parse tree produced by ASPParser#aggregate_element_head.
+	exitAggregate_element_head(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#aggregate_atom_body.
+	enterAggregate_atom_body(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#aggregate_atom_body.
+	exitAggregate_atom_body(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#aggregate_element_body.
+	enterAggregate_element_body(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#aggregate_element_body.
+	exitAggregate_element_body(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#aggregate_element_optimization.
+	enterAggregate_element_optimization(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#aggregate_element_optimization.
+	exitAggregate_element_optimization(ctx) {
 	}
 
 

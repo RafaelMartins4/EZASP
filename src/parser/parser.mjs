@@ -243,113 +243,159 @@ class VerboseASPListener extends ASPListener {
         // The groundedContextVariables array will store grounded variables that are available inside certain contexts
         // This way, grounded variables that are only available inside a certain context can be used to check for unsafe variables only inside the given context
         // The set of variables in groundedContextVariables[1] will be used to check for unsafety in variables inside contextVariables[1]
-        /* let contextVariables = [];
+        let contextVariables = [];
         let groundedContextVariables = [];
         let linkedContextVariables = [];
 
         const head = ctx.head();
         if(head) {
-            const atoms = head.rule_atoms();
-            atoms.forEach(rule_atom => {
-                if(rule_atom.literal()) {
-                    const terms = rule_atom.literal().classical_atom().atom().term();
-                    if(terms) {
-                        terms.forEach(term => {
-                            const vars = this.collectVariablesFromTerm(term);
-                            vars.forEach(v => totalVariables.add(v));
-                        });
-                    }
-                } else if(rule_atom.builtIn_atom()) {
-                    const hasNot = rule_atom.NOT() !== null;
-                    const builtIn_atom = rule_atom.builtIn_atom();
+            if(head.choice()) {
+                const choice_elements = head.choice().choice_element();
+                
+                if(choice_elements) {
+                    choice_elements.forEach(choice_element => {
+                        let choiceVariables = new Set();
+                        let choiceGroundedVariables = new Set();
+                        let choiceLinkedVariables = [];
 
-                    const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, true);
-                    result.vars.forEach(v => totalVariables.add(v));
-                    result.groundedVars.forEach(v => groundedVariables.add(v));
-                    result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
-
-                } else if(rule_atom.aggregate_atom()) {
-                    const aggregate_atom = rule_atom.aggregate_atom();
-                    
-                    const result = this.collectVariablesFromAggregateAtom(aggregate_atom);
-                    result.totalVariables.forEach(v => totalVariables.add(v));
-                    contextVariables.push(result.aggregateVariables);
-                    groundedContextVariables.push(result.aggregateGroundedVariables);
-                    linkedContextVariables.push(result.aggregateLinkedVariables);
-
-                } else if(rule_atom.assignment()) {
-                    // TODO: understand how to handle unsafe variables in assignments
-                } else if(rule_atom.choice()) {
-                    const choiceBody = rule_atom.choice().choice_body();
-
-                    let choiceVariables = new Set();
-                    let choiceGroundedVariables = new Set();
-
-                    if(choiceBody) {
-                        const definedLiterals = choiceBody.defined_literal();
-                        const usedLiterals = choiceBody.used_literal();
+                        const head_atom = choice_element.choiceHead_atoms();
                         
-                        // For some reason, if there is more than one defined literal, clingo marks all variables before the colon as unsafe, even if they appear to be grounded after the colon
-                        // To mimic this behaviour, if there is more than one defined literal, we simply add the variables from all defined literals to the choiceVariables set, without adding any to the choiceGroundedVariales set
-                        // We will only add variables to the choiceGroundedVariables set if there is only one defined literal
-                        // This will ensure that if these variables are not grounded elsewhere in the rule, they will be marked as unsafe, even if they appear to be grounded after the colon
-                        // If there is only one defined literal, then we will proceed as intended, and only mark it as unsafe if: 
-                        //      1. it is not grounded after the colon, and 2. it is not grounded anywhere else in the program
-                        if(definedLiterals) {
-                            definedLiterals.forEach(definedLiteral => {
-                                const terms = definedLiteral.literal().classical_atom().atom().term();
-                                if(terms) {
-                                    terms.forEach(term => {
-                                        const vars = this.collectVariablesFromTerm(term);
-                                        vars.forEach(v => choiceVariables.add(v));
-                                    });
+                        if(head_atom.literal()) {
+                            const terms = head_atom.literal().classical_atom().atom().term();
+                            if(terms) {
+                                terms.forEach(term => {
+                                    const vars = this.collectVariablesFromTerm(term);
+                                    vars.forEach(v => choiceVariables.add(v));
+                                });
+                            }
+                        } else if(head_atom.assignment()) {
+                            // TODO: understand how to handle unsafe variables in assignments
+                        } else if(head_atom.builtIn_atom()) {
+                            const hasNot = head_atom.NOT() !== null;
+                            const builtIn_atom = head_atom.builtIn_atom();
+
+                            // For some reason, built-in atoms that are in the head of a choice act like built-in atoms in the body of a rule
+                            // So they only ground variables if they use "==" or "not ... !="
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            result.vars.forEach(v => choiceVariables.add(v));
+                            result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
+                            result.linkedVars.forEach(linkedVar => choiceLinkedVariables.push(linkedVar));
+                        }
+
+                        const body_atoms = choice_element.choiceBody_atoms();
+                        if(body_atoms) {
+                            body_atoms.forEach(body_atom => {
+                                if(body_atom.literal()) {
+                                    const terms = body_atom.literal().classical_atom().atom().term();
+                                    if(terms) {
+                                        terms.forEach(term => {
+                                            const vars = this.collectVariablesFromTerm(term);
+                                            vars.forEach(v => choiceGroundedVariables.add(v));
+                                        });
+                                    }
+                                } else if(body_atom.assignment()) {
+                                    // TODO: understand how to handle unsafe variables in assignments
+                                } else if(body_atom.builtIn_atom()) {
+                                    const hasNot = body_atom.NOT() !== null;
+                                    const builtIn_atom = body_atom.builtIn_atom();
+                                    const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                                    result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
+                                    result.linkedVars.forEach(linkedVar => choiceLinkedVariables.push(linkedVar));
                                 }
                             });
-                            
-                            if(definedLiterals.size <= 1) {
-                                if(usedLiterals) {
-                                    usedLiterals.forEach(usedLiteral => {
-                                        const terms = usedLiteral.literal().classical_atom().atom().term();
-                                        if(terms) {
-                                            terms.forEach(term => {
-                                                const vars = this.collectVariablesFromTerm(term);
-                                                vars.forEach(v => choiceGroundedVariables.add(v));
-                                            });
-                                        }
-                                    });
-                                }
-                            }
                         }
-                    }
-
-                    contextVariables.push(choiceVariables);
-                    groundedContextVariables.push(choiceGroundedVariables);
-                    linkedContextVariables.push([]); // Pushing an empty array to ensure that the index of future linked variables arrays match their given context
+                    
+                        contextVariables.push(choiceVariables);
+                        groundedContextVariables.push(choiceGroundedVariables);
+                        linkedContextVariables.push(choiceLinkedVariables);
+                    });
                 }
-            })
+            } else if(head.aggregate_atom_head()) {
+                const aggregate_atom = head.aggregate_atom_head();
+
+                if(aggregate_atom.term()) {
+                    const vars = this.collectVariablesFromTerm(aggregate_atom.term());
+                    vars.forEach(v => totalVariables.add(v));
+                }
+                
+                const result = this.collectVariablesFromAggregateAtomHead(aggregate_atom);
+                contextVariables.push(result.aggregateVariables);
+                groundedContextVariables.push(result.aggregateGroundedVariables);
+                linkedContextVariables.push(result.aggregateLinkedVariables);
+
+            } else if(head.head_atoms()) {
+                const atoms = head.head_atoms();
+                atoms.forEach(head_atom => {
+                    if(head_atom.literal()) {
+                        const terms = head_atom.literal().classical_atom().atom().term();
+                        if(terms) {
+                            terms.forEach(term => {
+                                const vars = this.collectVariablesFromTerm(term);
+                                vars.forEach(v => totalVariables.add(v));
+                            });
+                        }
+                    } else if(head_atom.builtIn_atom()) {
+                        const hasNot = head_atom.NOT() !== null;
+                        const builtIn_atom = head_atom.builtIn_atom();
+
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, true);
+                        result.vars.forEach(v => totalVariables.add(v));
+                        result.groundedVars.forEach(v => groundedVariables.add(v));
+                        result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
+
+                    } else if(head_atom.assignment()) {
+                        // TODO: understand how to handle unsafe variables in assignments
+                    }
+                })
+            }
         }
 
-        const result = this.verifyUnsafeVariables(totalVariables, groundedVariables, linkedVariables, contextVariables, groundedContextVariables, linkedContextVariables);
-        if(result.length > 0)
+        const result = Array.from(this.verifyUnsafeVariables(totalVariables, groundedVariables, linkedVariables, contextVariables, groundedContextVariables, linkedContextVariables));
+        if(result.length > 0) {
             this.unsafeVariables.push({
                 unsafeVariables: result,
                 lineStart: ctx.start.line,
                 lineEnd: ctx.stop.line,
                 indexStart: ctx.start.column,
                 indexEnd: ctx.stop.column
-            }) */
+            })
+        }
     }
 
     enterChoice_rule(ctx) {
         if (!ctx.start || !ctx.stop) return;
 
+        // Check for unsafe variables
+        let totalVariables = new Set();
+        let groundedVariables = new Set();
+        let linkedVariables = [];
+
+        // This structure will be used to simulate clingo's behaviour regarding variables that are grounded through choices.
+        // A choice can ground variables in the whole rule through it's body. 
+        // However, these variables need to be 'pulled' into the context in order to be considered to be grounded globally.
+        // As a result, if a variable is not used in the body of the rule, it will not be grounded even if it appears in the body of the choice.
+        let headGroundedVariables = new Set();
+
+
+        let contextVariables = [];
+        let groundedContextVariables = [];
+        let linkedContextVariables = [];
+
         const choice = ctx.choice();
         if (choice) {
-            const choiceBody = choice.choice_body();
-            if (choiceBody) {
-                // Process defined predicates (before the colon)
-                const head_atoms = choiceBody.choiceHead_atoms();
-                head_atoms.forEach(head_atom => {
+            const choice_elements = choice.choice_element();
+            if (choice_elements) {
+                // When there are multiple choice elements, clingo does not allow variables to be grounded through choices. 
+                const hasMultipleElements = choice_elements.length > 1;
+                choice_elements.forEach(choice_element => {
+                    // These structures will temporarily hold the variables for each choice element, which will then be used to check for unsafe variables
+                    let choiceVariables = new Set();
+                    let choiceGroundedVariables = new Set();
+                    let choiceLinkedVariables = [];
+
+                    // Process defined predicates (before the colon)
+                    const head_atom = choice_element.choiceHead_atoms();
+                
                     if(head_atom.literal()) {
                         const atom = head_atom.literal().classical_atom().atom();
                         if (!atom || !atom.start || !atom.stop) return;
@@ -360,6 +406,8 @@ class VerboseASPListener extends ASPListener {
                         if(terms) {
                             terms.forEach(term => {
                                 this.processTerm(term, this.usedPredicates, true);
+                                const vars = this.collectVariablesFromTerm(term);
+                                vars.forEach(v => choiceVariables.add(v));
                             });
                         }
 
@@ -447,49 +495,27 @@ class VerboseASPListener extends ASPListener {
                             }
                             this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
                         }
+                    } else if(head_atom.builtIn_atom()) {
+                        const hasNot = head_atom.NOT() !== null;
+                        const builtIn_atom = head_atom.builtIn_atom();
+
+                        // For some reason, built-in atoms that are in the head of a choice act like built-in atoms in the body of a rule
+                        // So they only ground variables if they use "==" or "not ... !="
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        result.vars.forEach(v => choiceVariables.add(v));
+                        
+                        result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
+                        if(!hasMultipleElements) {
+                            result.groundedVars.forEach(v => headGroundedVariables.add(v));
+                        }
+                        result.linkedVars.forEach(linkedVar => choiceLinkedVariables.push(linkedVar));
                     }
-                });
-
-                // Process used predicates (after the colon)
-                const body_atoms = choiceBody.choiceBody_atoms();
-                body_atoms.forEach(body_atom => {
-                    if(body_atom.literal()) {
-                        const atom = body_atom.literal().classical_atom().atom();
-                        if (!atom || !atom.start || !atom.stop) return;
-                        const predicateName = atom.CONSTANT().getText();
-                        const terms = atom.term();
-                        const arity = terms ? terms.length : 0;
-
-                        if(terms) {
-                            terms.forEach(term => {
-                                this.processTerm(term, this.usedPredicates, true);
-                            });
-                        }
-
-                        const predicateKey = `${predicateName}/${arity}`;
-                        const lineStart = atom.start.line;
-                        const lineEnd = atom.stop.line;
-                        const indexStart = atom.start.column;
-                        let indexEnd = atom.stop.column;
-
-                        if(indexEnd ==  indexStart) {
-                            indexEnd += predicateName.length;
-                        }
-
-                        if (!this.usedPredicates.has(predicateKey)) {
-                            this.usedPredicates.set(predicateKey, []);
-                        }
-                        this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-
-                    } else if(body_atom.assignment()) {
-                        const assignment = body_atom.assignment();
-                        const assignee = assignment.assignee();
-                        const assigned_value = assignment.assigned_value();
-
-                        if(assignee.term()) {
-                            this.processTerm(assignee.term(), this.usedPredicates, false);
-                        } else if (assignee.literal()) {
-                            const atom = assignee.literal().classical_atom().atom();
+                
+                    // Process used predicates (after the colon)
+                    const body_atoms = choice_element.choiceBody_atoms();
+                    body_atoms.forEach(body_atom => {
+                        if(body_atom.literal()) {
+                            const atom = body_atom.literal().classical_atom().atom();
                             if (!atom || !atom.start || !atom.stop) return;
                             const predicateName = atom.CONSTANT().getText();
                             const terms = atom.term();
@@ -498,11 +524,16 @@ class VerboseASPListener extends ASPListener {
                             if(terms) {
                                 terms.forEach(term => {
                                     this.processTerm(term, this.usedPredicates, true);
+
+                                    const vars = this.collectVariablesFromTerm(term);
+                                    vars.forEach(v => choiceGroundedVariables.add(v));
+                                    if(!hasMultipleElements) {
+                                        vars.forEach(v => headGroundedVariables.add(v));
+                                    }
                                 });
                             }
 
                             const predicateKey = `${predicateName}/${arity}`;
-
                             const lineStart = atom.start.line;
                             const lineEnd = atom.stop.line;
                             const indexStart = atom.start.column;
@@ -516,42 +547,175 @@ class VerboseASPListener extends ASPListener {
                                 this.usedPredicates.set(predicateKey, []);
                             }
                             this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+
+                        } else if(body_atom.assignment()) {
+                            const assignment = body_atom.assignment();
+                            const assignee = assignment.assignee();
+                            const assigned_value = assignment.assigned_value();
+
+                            if(assignee.term()) {
+                                this.processTerm(assignee.term(), this.usedPredicates, false);
+                            } else if (assignee.literal()) {
+                                const atom = assignee.literal().classical_atom().atom();
+                                if (!atom || !atom.start || !atom.stop) return;
+                                const predicateName = atom.CONSTANT().getText();
+                                const terms = atom.term();
+                                const arity = terms ? terms.length : 0;
+
+                                if(terms) {
+                                    terms.forEach(term => {
+                                        this.processTerm(term, this.usedPredicates, true);
+                                    });
+                                }
+
+                                const predicateKey = `${predicateName}/${arity}`;
+
+                                const lineStart = atom.start.line;
+                                const lineEnd = atom.stop.line;
+                                const indexStart = atom.start.column;
+                                let indexEnd = atom.stop.column;
+
+                                if(indexEnd ==  indexStart) {
+                                    indexEnd += predicateName.length;
+                                }
+
+                                if (!this.usedPredicates.has(predicateKey)) {
+                                    this.usedPredicates.set(predicateKey, []);
+                                }
+                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            }
+
+                            if(assigned_value.term()) {
+                                this.processTerm(assigned_value.term(), this.usedPredicates, false);
+                            } else if(assigned_value.classical_atom()) {
+                                const atom = assigned_value.classical_atom().atom();
+                                if (!atom || !atom.start || !atom.stop) return;
+                                const predicateName = atom.CONSTANT().getText();
+                                const terms = atom.term();
+                                const arity = terms ? terms.length : 0;
+
+                                if(terms) {
+                                    terms.forEach(term => {
+                                        this.processTerm(term, this.usedPredicates, true);
+                                    });
+                                }
+
+                                const predicateKey = `${predicateName}/${arity}`;
+
+                                const lineStart = atom.start.line;
+                                const lineEnd = atom.stop.line;
+                                const indexStart = atom.start.column;
+                                let indexEnd = atom.stop.column;
+
+                                if(indexEnd ==  indexStart) {
+                                    indexEnd += predicateName.length;
+                                }
+
+                                if (!this.usedPredicates.has(predicateKey)) {
+                                    this.usedPredicates.set(predicateKey, []);
+                                }
+                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            }
+                        } else if(body_atom.builtIn_atom()) {
+                            const hasNot = body_atom.NOT() !== null;
+                            const builtIn_atom = body_atom.builtIn_atom();
+                            
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
+                            if(!hasMultipleElements) {
+                                result.groundedVars.forEach(v => headGroundedVariables.add(v));
+                            }
+                            result.linkedVars.forEach(linkedVar => choiceLinkedVariables.push(linkedVar));
                         }
+                    });
 
-                        if(assigned_value.term()) {
-                            this.processTerm(assigned_value.term(), this.usedPredicates, false);
-                        } else if(assigned_value.classical_atom()) {
-                            const atom = assigned_value.classical_atom().atom();
-                            if (!atom || !atom.start || !atom.stop) return;
-                            const predicateName = atom.CONSTANT().getText();
-                            const terms = atom.term();
-                            const arity = terms ? terms.length : 0;
-
-                            if(terms) {
-                                terms.forEach(term => {
-                                    this.processTerm(term, this.usedPredicates, true);
-                                });
-                            }
-
-                            const predicateKey = `${predicateName}/${arity}`;
-
-                            const lineStart = atom.start.line;
-                            const lineEnd = atom.stop.line;
-                            const indexStart = atom.start.column;
-                            let indexEnd = atom.stop.column;
-
-                            if(indexEnd ==  indexStart) {
-                                indexEnd += predicateName.length;
-                            }
-
-                            if (!this.usedPredicates.has(predicateKey)) {
-                                this.usedPredicates.set(predicateKey, []);
-                            }
-                            this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                        }
-                    }
+                    contextVariables.push(choiceVariables);
+                    groundedContextVariables.push(choiceGroundedVariables);
+                    linkedContextVariables.push(choiceLinkedVariables);
                 });
             }
+        }
+
+        const body = ctx.body();
+        if(body) {
+            const body_atoms = body.body_atoms();
+            body_atoms.forEach(body_atom => {
+                if(body_atom.literal()) {
+                    const terms = body_atom.literal().classical_atom().atom().term();
+                    if(terms) {
+                        terms.forEach(term => {
+                            const vars = this.collectVariablesFromTerm(term);
+                            vars.forEach(v => groundedVariables.add(v));
+                        });
+                    }
+                } else if(body_atom.builtIn_atom()) {
+                    const hasNot = body_atom.NOT() !== null;
+                    const builtIn_atom = body_atom.builtIn_atom();
+
+                    const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                    result.vars.forEach(v => {
+                        totalVariables.add(v)
+                        // If a variable is used in the body of a rule by an atom that does not ground the variable, then we must check if that variable was grounded in the head
+                        // If it was, then we 'pull' the variable into the globally grounded variables set
+                        if(headGroundedVariables.has(v)) {
+                            groundedVariables.add(v);
+                        }
+                    });
+                    result.groundedVars.forEach(v => groundedVariables.add(v));
+                    result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
+                } else if(body_atom.aggregate_atom_body()) {
+                    // O term que é usado na comparaçao do aggregate deve ir para as totalVariables
+                    const aggregate_atom = body_atom.aggregate_atom_body();
+                    const term = aggregate_atom.term();
+                    if(term) {
+                        const vars = this.collectVariablesFromTerm(term);
+                        vars.forEach(v => {
+                            totalVariables.add(v)
+                            if(headGroundedVariables.has(v)) {
+                                groundedVariables.add(v);
+                            }
+                        });
+
+                        // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
+                        // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
+                        let aggregateVariables = new Set();
+                        let aggregateGroundedVariables = new Set();
+                        let aggregateLinkedVariables = [];
+
+                        const result = this.collectVariablesFromAggregateAtomBody(aggregate_atom);
+                        result.aggregateVariables.forEach(v => aggregateVariables.add(v));
+                        result.aggregateGroundedVariables.forEach(v => aggregateGroundedVariables.add(v));
+                        result.aggregateLinkedVariables.forEach(linkedVar => aggregateLinkedVariables.push(linkedVar));
+                    
+                        contextVariables.push(aggregateVariables);
+                        groundedContextVariables.push(aggregateGroundedVariables);
+                        linkedContextVariables.push(aggregateLinkedVariables);
+                    }
+                } else if(body_atom.assignment()) {
+                    // TODO: understand how to handle unsafe variables in assignments
+                } else if(body_atom.choice()) {
+                    // TODO: I think we do not need to check choices in the body of a choice rule for unsafe variables, but need to confirm   
+                }
+            });
+        }
+
+        /* console.log('totalVars: ', totalVariables);
+        console.log('groundedVars: ', groundedVariables);
+        console.log('linkedVars: ', linkedVariables);
+        console.log('contextVars: ', contextVariables);
+        console.log('groundedContextVars: ', groundedContextVariables);
+        console.log('linkedContextVars: ', linkedContextVariables);
+        console.log('headGroundedVars: ', headGroundedVariables) */
+
+        const result = Array.from(this.verifyUnsafeVariables(totalVariables, groundedVariables, linkedVariables, contextVariables, groundedContextVariables, linkedContextVariables));
+        if(result.length > 0) {
+            this.unsafeVariables.push({
+                unsafeVariables: result,
+                lineStart: ctx.start.line,
+                lineEnd: ctx.stop.line,
+                indexStart: ctx.start.column,
+                indexEnd: ctx.stop.column
+            })
         }
 
         this.constructTypes.push({
@@ -711,50 +875,57 @@ class VerboseASPListener extends ASPListener {
     }
 
     enterHead(ctx) {
-        if (!ctx.rule_atoms) return;
-        const atoms = ctx.rule_atoms();
-        atoms.forEach(headAtom => {
-            if (headAtom.literal()) {
-                const atom = headAtom.literal().classical_atom().atom();
-                if (!atom || !atom.start || !atom.stop) return;
-                const predicateName = atom.CONSTANT().getText();
-                const terms = atom.term();
-                const arity = terms ? terms.length : 0;
+        if (!ctx.head_atoms() && !ctx.choice() && !ctx.aggregate_atom_head()) return;
 
-                if(terms) {
-                    terms.forEach(term => {
-                        this.processTerm(term, this.usedPredicates, true);
-                    });
-                }
+        if(ctx.choice()) {
+            const choice = ctx.choice();
+            const choice_elements = choice.choice_element();
 
-                const predicateKey = `${predicateName}/${arity}`;
-                const lineStart = atom.start.line;
-                const lineEnd = atom.stop.line;
-                const indexStart = atom.start.column;
-                let indexEnd = atom.stop.column;
+            if (choice_elements) {
+                choice_elements.forEach(choice_element => {
+                    const head_atom = choice_element.choiceHead_atoms();
 
-                if(indexEnd ==  indexStart) {
-                    indexEnd += predicateName.length;
-                }
+                    if(head_atom.literal()) {
+                        const atom = head_atom.literal().classical_atom().atom();
+                        if (!atom || !atom.start || !atom.stop) return;
+                        const predicateName = atom.CONSTANT().getText();
+                        const terms = atom.term();
+                        const arity = terms ? terms.length : 0;
 
-                if (!this.definedPredicates.has(predicateKey)) {
-                    this.definedPredicates.set(predicateKey, []);
-                }
-                this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                        const predicateKey = `${predicateName}/${arity}`;
 
-            } else if (headAtom.choice()) {
-                const choice = headAtom.choice();
-                const choiceBody = choice.choice_body();
+                        const lineStart = atom.start.line;
+                        const lineEnd = atom.stop.line;
+                        const indexStart = atom.start.column;
+                        let indexEnd = atom.stop.column;
 
-                if (choiceBody) {
-                    const choiceHead_atoms = choiceBody.choiceHead_atoms();
-                    choiceHead_atoms.forEach(head_atom => {
-                        if(head_atom.literal()) {
-                            const atom = head_atom.literal().classical_atom().atom();
+                        if(indexEnd ==  indexStart) {
+                            indexEnd += predicateName.length;
+                        }
+
+                        if (!this.definedPredicates.has(predicateKey)) {
+                            this.definedPredicates.set(predicateKey, []);
+                        }
+                        this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                    } else if(head_atom.assignment()) {
+                        const assignment = head_atom.assignment();
+                        const assignee = assignment.assignee();
+                        const assigned_value = assignment.assigned_value();
+
+                        if(assignee.term()) {
+                            this.processTerm(assignee.term(), this.definedPredicates, false);
+                        } else if (assignee.literal()) {
+                            const atom = assignee.literal().classical_atom().atom();
                             if (!atom || !atom.start || !atom.stop) return;
                             const predicateName = atom.CONSTANT().getText();
                             const terms = atom.term();
                             const arity = terms ? terms.length : 0;
+
+                            if(terms) {
+                                terms.forEach(term => {
+                                    this.processTerm(term, this.usedPredicates, true);
+                                });
+                            }
 
                             const predicateKey = `${predicateName}/${arity}`;
 
@@ -771,78 +942,42 @@ class VerboseASPListener extends ASPListener {
                                 this.definedPredicates.set(predicateKey, []);
                             }
                             this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                        } else if(head_atom.assignment()) {
-                            const assignment = head_atom.assignment();
-                            const assignee = assignment.assignee();
-                            const assigned_value = assignment.assigned_value();
-
-                            if(assignee.term()) {
-                                this.processTerm(assignee.term(), this.definedPredicates, false);
-                            } else if (assignee.literal()) {
-                                const atom = assignee.literal().classical_atom().atom();
-                                if (!atom || !atom.start || !atom.stop) return;
-                                const predicateName = atom.CONSTANT().getText();
-                                const terms = atom.term();
-                                const arity = terms ? terms.length : 0;
-
-                                if(terms) {
-                                    terms.forEach(term => {
-                                        this.processTerm(term, this.usedPredicates, true);
-                                    });
-                                }
-
-                                const predicateKey = `${predicateName}/${arity}`;
-
-                                const lineStart = atom.start.line;
-                                const lineEnd = atom.stop.line;
-                                const indexStart = atom.start.column;
-                                let indexEnd = atom.stop.column;
-
-                                if(indexEnd ==  indexStart) {
-                                    indexEnd += predicateName.length;
-                                }
-
-                                if (!this.definedPredicates.has(predicateKey)) {
-                                    this.definedPredicates.set(predicateKey, []);
-                                }
-                                this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                            }
-
-                            if(assigned_value.term()) {
-                                this.processTerm(assigned_value.term(), this.usedPredicates, false);
-                            } else if(assigned_value.classical_atom()) {
-                                const atom = assigned_value.classical_atom().atom();
-                                if (!atom || !atom.start || !atom.stop) return;
-                                const predicateName = atom.CONSTANT().getText();
-                                const terms = atom.term();
-                                const arity = terms ? terms.length : 0;
-
-                                if(terms) {
-                                    terms.forEach(term => {
-                                        this.processTerm(term, this.usedPredicates, true);
-                                    });
-                                }
-
-                                const predicateKey = `${predicateName}/${arity}`;
-
-                                const lineStart = atom.start.line;
-                                const lineEnd = atom.stop.line;
-                                const indexStart = atom.start.column;
-                                let indexEnd = atom.stop.column;
-
-                                if(indexEnd ==  indexStart) {
-                                    indexEnd += predicateName.length;
-                                }
-
-                                if (!this.usedPredicates.has(predicateKey)) {
-                                    this.usedPredicates.set(predicateKey, []);
-                                }
-                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                            }
                         }
-                    });
 
-                    const choiceBody_atoms = choiceBody.choiceBody_atoms();
+                        if(assigned_value.term()) {
+                            this.processTerm(assigned_value.term(), this.usedPredicates, false);
+                        } else if(assigned_value.classical_atom()) {
+                            const atom = assigned_value.classical_atom().atom();
+                            if (!atom || !atom.start || !atom.stop) return;
+                            const predicateName = atom.CONSTANT().getText();
+                            const terms = atom.term();
+                            const arity = terms ? terms.length : 0;
+
+                            if(terms) {
+                                terms.forEach(term => {
+                                    this.processTerm(term, this.usedPredicates, true);
+                                });
+                            }
+
+                            const predicateKey = `${predicateName}/${arity}`;
+
+                            const lineStart = atom.start.line;
+                            const lineEnd = atom.stop.line;
+                            const indexStart = atom.start.column;
+                            let indexEnd = atom.stop.column;
+
+                            if(indexEnd ==  indexStart) {
+                                indexEnd += predicateName.length;
+                            }
+
+                            if (!this.usedPredicates.has(predicateKey)) {
+                                this.usedPredicates.set(predicateKey, []);
+                            }
+                            this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                        }
+                    }
+
+                    const choiceBody_atoms = choice_element.choiceBody_atoms();
                     choiceBody_atoms.forEach(body_atom => {
                         if(body_atom.literal()) {
                             const atom = body_atom.literal().classical_atom().atom();
@@ -936,16 +1071,13 @@ class VerboseASPListener extends ASPListener {
                             }
                         }
                     });
-                }
-            } else if (headAtom.assignment()) {
-                const assignment = headAtom.assignment();
-                const assignee = assignment.assignee();
-                const assigned_value = assignment.assigned_value();
-
-                if(assignee.term()) {
-                    this.processTerm(assignee.term(), this.definedPredicates, false);
-                } else if (assignee.literal()) {
-                    const atom = assignee.literal().classical_atom().atom();
+                });
+            }
+        } else if(ctx.head_atoms()) {
+            const atoms = ctx.head_atoms();
+            atoms.forEach(headAtom => {
+                if (headAtom.literal()) {
+                    const atom = headAtom.literal().classical_atom().atom();
                     if (!atom || !atom.start || !atom.stop) return;
                     const predicateName = atom.CONSTANT().getText();
                     const terms = atom.term();
@@ -958,7 +1090,6 @@ class VerboseASPListener extends ASPListener {
                     }
 
                     const predicateKey = `${predicateName}/${arity}`;
-
                     const lineStart = atom.start.line;
                     const lineEnd = atom.stop.line;
                     const indexStart = atom.start.column;
@@ -972,49 +1103,87 @@ class VerboseASPListener extends ASPListener {
                         this.definedPredicates.set(predicateKey, []);
                     }
                     this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+
+                } else if (headAtom.assignment()) {
+                    const assignment = headAtom.assignment();
+                    const assignee = assignment.assignee();
+                    const assigned_value = assignment.assigned_value();
+
+                    if(assignee.term()) {
+                        this.processTerm(assignee.term(), this.definedPredicates, false);
+                    } else if (assignee.literal()) {
+                        const atom = assignee.literal().classical_atom().atom();
+                        if (!atom || !atom.start || !atom.stop) return;
+                        const predicateName = atom.CONSTANT().getText();
+                        const terms = atom.term();
+                        const arity = terms ? terms.length : 0;
+
+                        if(terms) {
+                            terms.forEach(term => {
+                                this.processTerm(term, this.usedPredicates, true);
+                            });
+                        }
+
+                        const predicateKey = `${predicateName}/${arity}`;
+
+                        const lineStart = atom.start.line;
+                        const lineEnd = atom.stop.line;
+                        const indexStart = atom.start.column;
+                        let indexEnd = atom.stop.column;
+
+                        if(indexEnd ==  indexStart) {
+                            indexEnd += predicateName.length;
+                        }
+
+                        if (!this.definedPredicates.has(predicateKey)) {
+                            this.definedPredicates.set(predicateKey, []);
+                        }
+                        this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                    }
+
+                    if(assigned_value.term()) {
+                        this.processTerm(assigned_value.term(), this.usedPredicates, false);
+                    } else if(assigned_value.classical_atom()) {
+                        const atom = assigned_value.classical_atom().atom();
+                        if (!atom || !atom.start || !atom.stop) return;
+                        const predicateName = atom.CONSTANT().getText();
+                        const terms = atom.term();
+                        const arity = terms ? terms.length : 0;
+
+                        if(terms) {
+                            terms.forEach(term => {
+                                this.processTerm(term, this.usedPredicates, true);
+                            });
+                        }
+
+                        const predicateKey = `${predicateName}/${arity}`;
+
+                        const lineStart = atom.start.line;
+                        const lineEnd = atom.stop.line;
+                        const indexStart = atom.start.column;
+                        let indexEnd = atom.stop.column;
+
+                        if(indexEnd ==  indexStart) {
+                            indexEnd += predicateName.length;
+                        }
+
+                        if (!this.usedPredicates.has(predicateKey)) {
+                            this.usedPredicates.set(predicateKey, []);
+                        }
+                        this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                    }
                 }
-
-                if(assigned_value.term()) {
-                    this.processTerm(assigned_value.term(), this.usedPredicates, false);
-                } else if(assigned_value.classical_atom()) {
-                    const atom = assigned_value.classical_atom().atom();
-                    if (!atom || !atom.start || !atom.stop) return;
-                    const predicateName = atom.CONSTANT().getText();
-                    const terms = atom.term();
-                    const arity = terms ? terms.length : 0;
-
-                    if(terms) {
-                        terms.forEach(term => {
-                            this.processTerm(term, this.usedPredicates, true);
-                        });
-                    }
-
-                    const predicateKey = `${predicateName}/${arity}`;
-
-                    const lineStart = atom.start.line;
-                    const lineEnd = atom.stop.line;
-                    const indexStart = atom.start.column;
-                    let indexEnd = atom.stop.column;
-
-                    if(indexEnd ==  indexStart) {
-                        indexEnd += predicateName.length;
-                    }
-
-                    if (!this.usedPredicates.has(predicateKey)) {
-                        this.usedPredicates.set(predicateKey, []);
-                    }
-                    this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                }
-            } 
-        });
+            });
+        }
+        
     }
 
     enterBody(ctx) {
-        if (!ctx.rule_atoms) return;
-        const atoms = ctx.rule_atoms();
-        atoms.forEach(headAtom => {
-            if (headAtom.literal()) {
-                const atom = headAtom.literal().classical_atom().atom();
+        if (!ctx.body_atoms()) return;
+        const atoms = ctx.body_atoms();
+        atoms.forEach(bodyAtom => {
+            if (bodyAtom.literal()) {
+                const atom = bodyAtom.literal().classical_atom().atom();
                 if (!atom || !atom.start || !atom.stop) return;
                 const predicateName = atom.CONSTANT().getText();
                 const terms = atom.term();
@@ -1042,13 +1211,14 @@ class VerboseASPListener extends ASPListener {
                 }
                 this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
 
-            } else if (headAtom.choice()) {
-                const choice = headAtom.choice();
+            } else if (bodyAtom.choice()) {
+                const choice = bodyAtom.choice();
+                const choice_elements = choice.choice_element();
 
-                if (choice.choice_body()) {
-                    const choiceBody = choice.choice_body();
-                    const choiceHead_atoms = choiceBody.choiceHead_atoms();
-                    choiceHead_atoms.forEach(head_atom => {
+                if (choice_elements) {
+                    choice_elements.forEach(choice_element => {
+                        const head_atom = choice_element.choiceHead_atoms();
+                        
                         if(head_atom.literal()) {
                             const atom = head_atom.literal().classical_atom().atom();
                             if (!atom || !atom.start || !atom.stop) return;
@@ -1140,51 +1310,15 @@ class VerboseASPListener extends ASPListener {
                                 this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
                             }
                         }
-                    });
 
-                    const choiceBody_atoms = choiceBody.choiceBody_atoms();
-                    choiceBody_atoms.forEach(body_atom => {
-                        if(body_atom.literal()) {
-                            const atom = body_atom.literal().classical_atom().atom();
-                            if (!atom || !atom.start || !atom.stop) return;
-                            const predicateName = atom.CONSTANT().getText();
-                            const terms = atom.term();
-                            const arity = terms ? terms.length : 0;
-
-                            const predicateKey = `${predicateName}/${arity}`;
-
-                            const lineStart = atom.start.line;
-                            const lineEnd = atom.stop.line;
-                            const indexStart = atom.start.column;
-                            let indexEnd = atom.stop.column;
-
-                            if(indexEnd ==  indexStart) {
-                                indexEnd += predicateName.length;
-                            }
-
-                            if (!this.usedPredicates.has(predicateKey)) {
-                                this.usedPredicates.set(predicateKey, []);
-                            }
-                            this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                        } else if(body_atom.assignment()) {
-                            const assignment = body_atom.assignment();
-                            const assignee = assignment.assignee();
-                            const assigned_value = assignment.assigned_value();
-
-                            if(assignee.term()) {
-                                this.processTerm(assignee.term(), this.usedPredicates, false);
-                            } else if (assignee.literal()) {
-                                const atom = assignee.literal().classical_atom().atom();
+                        const choiceBody_atoms = choice_element.choiceBody_atoms();
+                        choiceBody_atoms.forEach(body_atom => {
+                            if(body_atom.literal()) {
+                                const atom = body_atom.literal().classical_atom().atom();
                                 if (!atom || !atom.start || !atom.stop) return;
                                 const predicateName = atom.CONSTANT().getText();
                                 const terms = atom.term();
                                 const arity = terms ? terms.length : 0;
-
-                                if(terms) {
-                                    terms.forEach(term => {
-                                        this.processTerm(term, this.usedPredicates, true);
-                                    });
-                                }
 
                                 const predicateKey = `${predicateName}/${arity}`;
 
@@ -1201,44 +1335,80 @@ class VerboseASPListener extends ASPListener {
                                     this.usedPredicates.set(predicateKey, []);
                                 }
                                 this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            } else if(body_atom.assignment()) {
+                                const assignment = body_atom.assignment();
+                                const assignee = assignment.assignee();
+                                const assigned_value = assignment.assigned_value();
+
+                                if(assignee.term()) {
+                                    this.processTerm(assignee.term(), this.usedPredicates, false);
+                                } else if (assignee.literal()) {
+                                    const atom = assignee.literal().classical_atom().atom();
+                                    if (!atom || !atom.start || !atom.stop) return;
+                                    const predicateName = atom.CONSTANT().getText();
+                                    const terms = atom.term();
+                                    const arity = terms ? terms.length : 0;
+
+                                    if(terms) {
+                                        terms.forEach(term => {
+                                            this.processTerm(term, this.usedPredicates, true);
+                                        });
+                                    }
+
+                                    const predicateKey = `${predicateName}/${arity}`;
+
+                                    const lineStart = atom.start.line;
+                                    const lineEnd = atom.stop.line;
+                                    const indexStart = atom.start.column;
+                                    let indexEnd = atom.stop.column;
+
+                                    if(indexEnd ==  indexStart) {
+                                        indexEnd += predicateName.length;
+                                    }
+
+                                    if (!this.usedPredicates.has(predicateKey)) {
+                                        this.usedPredicates.set(predicateKey, []);
+                                    }
+                                    this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                }
+
+                                if(assigned_value.term()) {
+                                    this.processTerm(assigned_value.term(), this.usedPredicates, false);
+                                } else if(assigned_value.classical_atom()) {
+                                    const atom = assigned_value.classical_atom().atom();
+                                    if (!atom || !atom.start || !atom.stop) return;
+                                    const predicateName = atom.CONSTANT().getText();
+                                    const terms = atom.term();
+                                    const arity = terms ? terms.length : 0;
+
+                                    if(terms) {
+                                        terms.forEach(term => {
+                                            this.processTerm(term, this.usedPredicates, true);
+                                        });
+                                    }
+
+                                    const predicateKey = `${predicateName}/${arity}`;
+
+                                    const lineStart = atom.start.line;
+                                    const lineEnd = atom.stop.line;
+                                    const indexStart = atom.start.column;
+                                    let indexEnd = atom.stop.column;
+
+                                    if(indexEnd ==  indexStart) {
+                                        indexEnd += predicateName.length;
+                                    }
+
+                                    if (!this.usedPredicates.has(predicateKey)) {
+                                        this.usedPredicates.set(predicateKey, []);
+                                    }
+                                    this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                }
                             }
-
-                            if(assigned_value.term()) {
-                                this.processTerm(assigned_value.term(), this.usedPredicates, false);
-                            } else if(assigned_value.classical_atom()) {
-                                const atom = assigned_value.classical_atom().atom();
-                                if (!atom || !atom.start || !atom.stop) return;
-                                const predicateName = atom.CONSTANT().getText();
-                                const terms = atom.term();
-                                const arity = terms ? terms.length : 0;
-
-                                if(terms) {
-                                    terms.forEach(term => {
-                                        this.processTerm(term, this.usedPredicates, true);
-                                    });
-                                }
-
-                                const predicateKey = `${predicateName}/${arity}`;
-
-                                const lineStart = atom.start.line;
-                                const lineEnd = atom.stop.line;
-                                const indexStart = atom.start.column;
-                                let indexEnd = atom.stop.column;
-
-                                if(indexEnd ==  indexStart) {
-                                    indexEnd += predicateName.length;
-                                }
-
-                                if (!this.usedPredicates.has(predicateKey)) {
-                                    this.usedPredicates.set(predicateKey, []);
-                                }
-                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                            }
-                        }
+                        });
                     });
                 }
-            } else if (headAtom.assignment()) {
-                const assignment = headAtom.assignment();
+            } else if (bodyAtom.assignment()) {
+                const assignment = bodyAtom.assignment();
                 const assignee = assignment.assignee();
                 const assigned_value = assignment.assigned_value();
 
@@ -1318,7 +1488,7 @@ class VerboseASPListener extends ASPListener {
         }
     }
 
-    enterAggregate_atom(ctx) {
+    enterAggregate_atom_head(ctx) {
         if (!ctx.start || !ctx.stop) return;
 
         if(ctx.term()) {
@@ -1326,7 +1496,63 @@ class VerboseASPListener extends ASPListener {
             this.processTerm(term, this.usedPredicates, false);
         }
 
-        const aggregate_elements = ctx.aggregate_element();
+        const aggregate_elements = ctx.aggregate_element_head();
+        aggregate_elements.forEach(aggregateElement => {
+            if(aggregateElement.term()) {
+                const terms = aggregateElement.term();
+                terms.forEach(term => {
+                    this.processTerm(term, this.usedPredicates, false);
+                });
+            }
+
+            if(aggregateElement.aggregate_literal()) {
+                const aggregate_literals = aggregateElement.aggregate_literal();
+                aggregate_literals.forEach(aggregateLiteral => {
+                    if(aggregateLiteral.literal()) {
+                        const atom = aggregateLiteral.literal().classical_atom().atom();
+                        if (!atom || !atom.start || !atom.stop) return;
+                        const predicateName = atom.CONSTANT().getText();
+                        const terms = atom.term();
+                        const arity = terms ? terms.length : 0;
+
+                        if(terms) {
+                            terms.forEach(term => {
+                                this.processTerm(term, this.usedPredicates, true);
+                            });
+                        }
+
+                        const predicateKey = `${predicateName}/${arity}`;
+
+                        const lineStart = atom.start.line;
+                        const lineEnd = atom.stop.line;
+                        const indexStart = atom.start.column;
+                        let indexEnd = atom.stop.column;
+
+                        if(indexEnd ==  indexStart) {
+                            indexEnd += predicateName.length;
+                        }
+
+                        if (!this.usedPredicates.has(predicateKey)) {
+                            this.usedPredicates.set(predicateKey, []);
+                        }
+                        this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                    }
+                });
+            }
+
+        });
+        
+    }
+
+    enterAggregate_atom_body(ctx) {
+        if (!ctx.start || !ctx.stop) return;
+
+        if(ctx.term()) {
+            const term = ctx.term();
+            this.processTerm(term, this.usedPredicates, false);
+        }
+
+        const aggregate_elements = ctx.aggregate_element_body();
         aggregate_elements.forEach(aggregateElement => {
             if(aggregateElement.term()) {
                 const terms = aggregateElement.term();
@@ -1462,7 +1688,7 @@ class VerboseASPListener extends ASPListener {
     }
 
     collectVariablesFromTerm(term) {
-        if(!term) return;
+        if(!term) return new Set();
 
         let vars = new Set();
 
@@ -1513,7 +1739,7 @@ class VerboseASPListener extends ASPListener {
         if(isOnHead) {
             if((!hasNot && comparator == '!=') || (hasNot && comparator == '==')) {
                 if(vars1.size > 0 && vars2.size == 0) {
-                vars1.forEach(v => groundedVars.add(v));
+                    vars1.forEach(v => groundedVars.add(v));
                 } else if(vars1.size == 0 && vars2.size > 0) {
                     vars2.forEach(v => groundedVars.add(v));
                 } else if(vars1.size > 0 && vars2.size > 0) {
@@ -1531,7 +1757,7 @@ class VerboseASPListener extends ASPListener {
                 } else if(vars1.size > 0 && vars2.size > 0) {
                     const set1 = new Set(vars1);
                     const set2 = new Set(vars2);
-                    linkedVars.push({set1: set1, set2: set2});
+                    linkedVars.push({ set1: set1, set2: set2 } );
                 }
             }
         }
@@ -1539,22 +1765,15 @@ class VerboseASPListener extends ASPListener {
         return { vars, groundedVars, linkedVars };
     }
 
-    collectVariablesFromAggregateAtom(aggregate_atom) {
-        let totalVariables = new Set();
-
-        if(aggregate_atom.term()) {
-            const vars = this.collectVariablesFromTerm(aggregate_atom.term());
-            vars.forEach(v => totalVariables.add(v));
-        }
-
+    collectVariablesFromAggregateAtomHead(aggregate_atom) {
         // These variables are only available inside the aggregate atom context
         // As a result, they must be stored separately to ensure we can verify for unsafety inside the given context
         let aggregateVariables = new Set();
         let aggregateGroundedVariables = new Set();
         let aggregateLinkedVariables = [];
 
-        if(aggregate_atom.aggregate_element()) {
-            const aggregate_elements = aggregate_atom.aggregate_element();
+        if(aggregate_atom.aggregate_element_head()) {
+            const aggregate_elements = aggregate_atom.aggregate_element_head();
             aggregate_elements.forEach(aggregateElement => {
                 const terms = aggregateElement.term();
                 if(terms) {
@@ -1590,11 +1809,58 @@ class VerboseASPListener extends ASPListener {
             });
         }
 
-        return {totalVariables, aggregateVariables, aggregateGroundedVariables, aggregateLinkedVariables};
+        return {aggregateVariables, aggregateGroundedVariables, aggregateLinkedVariables};
+    }
+
+    collectVariablesFromAggregateAtomBody(aggregate_atom) {
+        // These variables are only available inside the aggregate atom context
+        // As a result, they must be stored separately to ensure we can verify for unsafety inside the given context
+        let aggregateVariables = new Set();
+        let aggregateGroundedVariables = new Set();
+        let aggregateLinkedVariables = [];
+
+        if(aggregate_atom.aggregate_element_body()) {
+            const aggregate_elements = aggregate_atom.aggregate_element_body();
+            aggregate_elements.forEach(aggregateElement => {
+                const terms = aggregateElement.term();
+                if(terms) {
+                    terms.forEach(term => {
+                        const vars = this.collectVariablesFromTerm(term);
+                        vars.forEach(v => aggregateVariables.add(v));
+                    });
+                }
+
+                const aggregate_literals = aggregateElement.aggregate_literal();
+                if(aggregate_literals) {
+                    aggregate_literals.forEach(aggregateLiteral => {
+                        if(aggregateLiteral.literal()) {
+                            const terms = aggregateLiteral.literal().classical_atom().atom().term();
+                            if(terms) {
+                                terms.forEach(term => {
+                                    const vars = this.collectVariablesFromTerm(term);
+                                    vars.forEach(v => aggregateGroundedVariables.add(v));
+                                });
+                            }
+                        } else if(aggregateLiteral.builtIn_atom) {
+                            const hasNot = aggregateLiteral.NOT() !== null;
+                            const builtIn_atom = aggregateLiteral.builtIn_atom();
+                            
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+
+                            result.vars.forEach(v => aggregateVariables.add(v));
+                            result.groundedVars.forEach(v => aggregateGroundedVariables.add(v));
+                            result.linkedVars.forEach(linkedVar => aggregateLinkedVariables.push(linkedVar));
+                        }
+                    });
+                }
+            });
+        }
+
+        return {aggregateVariables, aggregateGroundedVariables, aggregateLinkedVariables};
     }
 
     verifyUnsafeVariables(totalVariables, groundedVariables, linkedVariables, contextVariables, groundedContextVariables, linkedContextVariables) {
-        let localUnsafeVariables = [];
+        let localUnsafeVariables = new Set();
 
         let hasChanged = true;
         
@@ -1606,31 +1872,31 @@ class VerboseASPListener extends ASPListener {
                 const set2 = linkedVarArray.set2;
 
                 for(const groundedVar of [...groundedVariables]) {
-                    let hasDeletedSet1 = set1.delete(groundedVar);
-                    let hasDeletedSet2 = set2.delete(groundedVar);
+                    let changedHere = false;
 
-                    if(hasDeletedSet1 || hasDeletedSet2) {
-                        hasChanged = true;
-                    }
+                    if (set1.delete(groundedVar)) changedHere = true;
+                    if (set2.delete(groundedVar)) changedHere = true;
 
-                    if(set1.size === 0) {
+                    if (set1.size === 0 && set2.size > 0) {
                         set2.forEach(v => groundedVariables.add(v));
                         set2.clear();
-                        hasChanged = true;
+                        changedHere = true;
                     }
 
-                    if(set2.size === 0) {
+                    if (set2.size === 0 && set1.size > 0) {
                         set1.forEach(v => groundedVariables.add(v));
                         set1.clear();
-                        hasChanged = true;
+                        changedHere = true;
                     }
+
+                    if (changedHere) hasChanged = true;
                 }
             });
         }
 
         totalVariables.forEach(v => {
             if(!groundedVariables.has(v)) {
-                localUnsafeVariables.push(v);
+                localUnsafeVariables.add(v);
             }
         });
 
@@ -1647,32 +1913,32 @@ class VerboseASPListener extends ASPListener {
                     const set1 = linkedVarArray.set1;
                     const set2 = linkedVarArray.set2;
 
-                    for(const groundedVar of new Set([...currentGroundedContextVars, groundedVariables])) {
-                        let hasDeletedSet1 = set1.delete(groundedVar);
-                        let hasDeletedSet2 = set2.delete(groundedVar);
+                    for(const groundedVar of new Set([...currentGroundedContextVars, ...groundedVariables])) {
+                        let changedHere = false;
 
-                        if(hasDeletedSet1 || hasDeletedSet2) {
-                            hasChanged = true;
-                        }
+                        if (set1.delete(groundedVar)) changedHere = true;
+                        if (set2.delete(groundedVar)) changedHere = true;
 
-                        if(set1.size === 0) {
+                        if (set1.size === 0 && set2.size > 0) {
                             set2.forEach(v => currentGroundedContextVars.add(v));
                             set2.clear();
-                            hasChanged = true;
+                            changedHere = true;
                         }
 
-                        if(set2.size === 0) {
+                        if (set2.size === 0 && set1.size > 0) {
                             set1.forEach(v => currentGroundedContextVars.add(v));
                             set1.clear();
-                            hasChanged = true;
+                            changedHere = true;
                         }
+
+                        if (changedHere) hasChanged = true;
                     }
                 });
             }
 
             currentContextVars.forEach(v => {
                 if(!groundedVariables.has(v) && !currentGroundedContextVars.has(v)) {
-                    localUnsafeVariables.push(v);
+                    localUnsafeVariables.add(v);
                 }
             });
         }
@@ -1681,7 +1947,8 @@ class VerboseASPListener extends ASPListener {
     }
 
     exitProgram(ctx) {
-        
+        console.log('Unsafe variables:')
+        console.log(this.unsafeVariables);
     }
 
     getSyntaxErrors() {
