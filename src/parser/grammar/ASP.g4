@@ -9,7 +9,7 @@ constant:
 
 // Types of Rules: Facts, Choice Rules, Definite Rules, Integrity Constraints
 fact: 
-       head DOT;
+       (head | choice) DOT;
 
 choice_rule:
        choice ':-' body DOT;
@@ -18,8 +18,8 @@ choice: (lowerbound)? '{' (choice_element (';' choice_element)*)? '}' (upperboun
 
 choice_element: choiceHead_atoms (':' (choiceBody_atoms (',' choiceBody_atoms)* )? )?;
 
-choiceHead_atoms: literal | NOT? assignment | NOT? builtIn_atom;  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
-choiceBody_atoms: literal | NOT? assignment | NOT? builtIn_atom;
+choiceHead_atoms: literal | (NOT? builtIn_atom);  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
+choiceBody_atoms: literal | (NOT? builtIn_atom);
 
 definite_rule:
        head ':-' body DOT;
@@ -28,13 +28,13 @@ constraint:
        ':-' body DOT;
 
 head: 
-       head_atoms (';' head_atoms)* | choice | aggregate_atom_head;
+       (head_atoms ((';' | ',') head_atoms)*) | aggregate_atom_head;
 body: 
-       body_atoms (',' body_atoms)*;
+       (body_atoms ((';' | ',') body_atoms)*)?;
 
-head_atoms: literal | NOT? builtIn_atom | assignment;
+head_atoms: literal | NOT? builtIn_atom;
 
-body_atoms: literal | NOT? builtIn_atom | aggregate_atom_body | assignment | choice;
+body_atoms: literal | NOT? builtIn_atom | NOT? aggregate_atom_body | NOT? choice;
 
 // Optimization statements
 optimization: 
@@ -48,9 +48,9 @@ weak_constraint:
        ':~' body '.' '[' (weight '@' priority ',')? ((CLASSICAL_NEGATION)? term (',' (CLASSICAL_NEGATION)? term)*) EOWC;
 
 show:
-       show_atoms DOT
-       | show_terms DOT
-       | show_nothing DOT;
+       (show_atoms DOT)
+       | (show_terms DOT)
+       | (show_nothing DOT);
 
 show_atoms: '#show' CONSTANT '/' NUMBER;
 show_terms: '#show' term ':' literal (',' literal)*;
@@ -65,29 +65,48 @@ literal: NOT? classical_atom;
 classical_atom: CLASSICAL_NEGATION? atom;
 atom: CONSTANT ('(' (term (',' term)*)? ')')?;
 
-builtIn_atom: term COMPARATOR term;
+builtIn_atom: term (COMPARATOR | EQ | EQEQ) term;
 
-aggregate_atom_head: AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}' (COMPARATOR term)?;
-aggregate_element_head: term (',' term)* ':' aggregate_literal (',' aggregate_literal)*;   // Separating aggregate elements because clingo accepts slightly different aggregates depending if it's placed on head or body
+aggregate_atom_head:
+       AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}' ((COMPARATOR | EQ | EQEQ) term)?
+       | (term (COMPARATOR | EQ | EQEQ))? AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}';
 
-aggregate_atom_body: AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' (COMPARATOR term)?;
+aggregate_element_head: term (',' term)* ':' aggregate_literal;   // Separating aggregate elements because clingo accepts slightly different aggregates depending if it's placed on head or body
+
+aggregate_atom_body: 
+       AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' ((COMPARATOR | EQ | EQEQ) term)?
+       | (term (COMPARATOR | EQ | EQEQ))? AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' ;
+
 aggregate_element_body: (term (',' term)*)? (':' (aggregate_literal (',' aggregate_literal)*)?)?;
 
 aggregate_element_optimization: term (',' term)* (':' (aggregate_literal (',' aggregate_literal)*)?)?;
 
 aggregate_literal: literal | NOT? builtIn_atom;
 
-assignment: assignee '=' assigned_value;
-assignee: NOT? term | aggregate_atom_body | literal;
-assigned_value: term | classical_atom | aggregate_atom_body;
-
 // Terms
-term: simpleTerm | functionTerm | tuple;
-simpleTerm: integer | CONSTANT | STRING | VARIABLE | UNDERSCORE | SUP | INF;
-functionTerm: CONSTANT '(' term (',' term)* ')';
-tuple: '(' (term (',' term)*)? ')';
+term: additiveTerm;
 
-constant_term: integer | CONSTANT | STRING | SUP | INF | constant_functionTerm | constant_tuple;
+additiveTerm: CLASSICAL_NEGATION? multiplicativeTerm ((ADDITION | CLASSICAL_NEGATION | OR | EXCLUSIVE_OR) multiplicativeTerm)*;
+
+multiplicativeTerm: powerTerm ((MULTIPLICATION| DIVISION | MODULO | AND) powerTerm)*;
+
+powerTerm: unaryTerm (EXPONENTIATION unaryTerm)*;
+
+unaryTerm: simpleTerm | functionTerm | tuple | '(' term ')';
+simpleTerm: integer | CONSTANT | STRING | VARIABLE | UNDERSCORE | SUP | INF;
+functionTerm: CONSTANT '(' (term (',' term)*)? ')';
+tuple: '(' term ',' term (',' term)* ')';
+
+// Constant rules utilize slightly different terms
+constant_term: constant_additiveTerm;
+
+constant_additiveTerm: constant_multiplicativeTerm ((ADDITION | CLASSICAL_NEGATION | OR | EXCLUSIVE_OR) constant_multiplicativeTerm)*;
+
+constant_multiplicativeTerm: constant_powerTerm ((MULTIPLICATION | DIVISION | MODULO | AND) constant_powerTerm)*;
+
+constant_powerTerm: constant_unaryTerm (EXPONENTIATION constant_unaryTerm)*;
+
+constant_unaryTerm: integer | CONSTANT | STRING | SUP | INF | constant_functionTerm | constant_tuple | '(' constant_term ')';
 constant_functionTerm: CONSTANT '(' (constant_term (',' constant_term)*)? ')';
 constant_tuple: '(' (constant_term (',' constant_term)* )? ')';
 
@@ -112,7 +131,17 @@ INF: '#inf';
 NUMBER: ('0' | [1-9][0-9]*);
 INTERVAL: (NUMBER '..' NUMBER);
 STRING: '"' (~('"' | '\n' | '\r'))* '"';
-COMPARATOR: '<' | '<=' | '==' | '!=' | '>=' | '>';
+EQ: '=';      // we separated both equality signs from the rest of the comparators to ensure that the program accepts both types of equality
+EQEQ: '==';   // without this separation there seemed to be some ambiguity and the parser could not decide between accepting the '=' operator or looking ahead in hopes of finding a '==' operator.
+COMPARATOR: '<' | '<=' | '!=' | '>=' | '>';
 AGGREGATE_FUNCTION: '#count' | '#sum' | '#max' | '#min';
 CLASSICAL_NEGATION: '-';
+ADDITION: '+';
+OR: '?';
+EXCLUSIVE_OR: '^';
+MULTIPLICATION: '*';
+DIVISION: '/';
+MODULO: '\\';
+AND: '&';
+EXPONENTIATION: '**';
 WS: [ \t\r\n]+ -> skip;

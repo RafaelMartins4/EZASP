@@ -45,7 +45,8 @@
     "pretest": "npm run lint",
     "test": "node ./test/index.js",
     "clean": "if exist generated rmdir /s /q generated",
-    "generate": "npm run clean && java -jar D:\\ANTLR\\antlr-4.13.2-complete.jar -Dlanguage=JavaScript -o .\\generated src\\parser\\grammar\\ASP.g4",
+    "generate": "npm run clean && java -jar D:\\ANTLR\\antlr-4.13.2-complete.jar -Dlanguage=JavaScript -o .\\generated src\\parser\\grammar\\ASP.g4 && npm run changeParserExtensions",
+    "changeParserExtensions": "powershell -Command \"Get-ChildItem .\\generated\\src\\parser\\grammar -Filter *.js | Rename-Item -NewName { $_.BaseName + '.mjs' }\"",
     "parse": "node src/parser/parser.mjs",
     "build": "webpack",
     "dev": "webpack --mode development"

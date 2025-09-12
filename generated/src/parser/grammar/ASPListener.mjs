@@ -320,39 +320,48 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by ASPParser#assignment.
-	enterAssignment(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#assignment.
-	exitAssignment(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#assignee.
-	enterAssignee(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#assignee.
-	exitAssignee(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#assigned_value.
-	enterAssigned_value(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#assigned_value.
-	exitAssigned_value(ctx) {
-	}
-
-
 	// Enter a parse tree produced by ASPParser#term.
 	enterTerm(ctx) {
 	}
 
 	// Exit a parse tree produced by ASPParser#term.
 	exitTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#additiveTerm.
+	enterAdditiveTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#additiveTerm.
+	exitAdditiveTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#multiplicativeTerm.
+	enterMultiplicativeTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#multiplicativeTerm.
+	exitMultiplicativeTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#powerTerm.
+	enterPowerTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#powerTerm.
+	exitPowerTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#unaryTerm.
+	enterUnaryTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#unaryTerm.
+	exitUnaryTerm(ctx) {
 	}
 
 
@@ -389,6 +398,42 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ASPParser#constant_term.
 	exitConstant_term(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_additiveTerm.
+	enterConstant_additiveTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_additiveTerm.
+	exitConstant_additiveTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_multiplicativeTerm.
+	enterConstant_multiplicativeTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_multiplicativeTerm.
+	exitConstant_multiplicativeTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_powerTerm.
+	enterConstant_powerTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_powerTerm.
+	exitConstant_powerTerm(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#constant_unaryTerm.
+	enterConstant_unaryTerm(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#constant_unaryTerm.
+	exitConstant_unaryTerm(ctx) {
 	}
 
 

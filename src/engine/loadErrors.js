@@ -49,16 +49,38 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	const extraParserResults = [];
 	const extraDefinedPredicates = [];
-	const extraConstructTypes = [];
+	const extraHasGenerator = [];
 
 	if (extraTextRaw != []) {
 		for (const text of extraTextRaw[1]) {
 			let extraResult = parser.parse(text); 
 			extraParserResults.push(extraResult);
 			extraDefinedPredicates.push(extraResult.definedPredicates);
-			extraConstructTypes.push(extraResult.constructTypes);
+			extraHasGenerator.push(extraResult.hasGenerator);
 		}
 	}
+	
+	// Unsafe Variables
+
+	let unsafeVariablesErrorRanges = [];
+	let unsafeVariablesMessages = [];
+
+	parserResult.unsafeVariables.forEach(unsafeError => {
+		const range = {
+			lineStart: unsafeError.lineStart - 1,
+			lineEnd: unsafeError.lineEnd - 1,
+			indexStart: unsafeError.indexStart,
+			indexEnd: unsafeError.indexEnd
+		};
+
+		const errorMessage = `Unsafe Variables: ${unsafeError.unsafeVariables.join(", ")}`;
+
+		unsafeVariablesErrorRanges.push(range)
+		unsafeVariablesMessages.push(errorMessage)
+	});
+
+/* 	console.log("unsafeVariablesRanges: ")
+	console.log(unsafeVariablesErrorRanges) */
 
 	// Syntax Errors
 
@@ -92,6 +114,9 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		});
 	}
 
+/* 	console.log("syntaxErrorRanges:")
+	console.log(syntaxErrorRanges) */
+
 	// Ordering Errors
 
 	let orderingWarningRanges = [];
@@ -105,16 +130,10 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	if (orderErrors != "true") {
 
 		// Check if the program has a generator (choice rule)
-		let hasGenerator = false;
-
-		hasGenerator = constructTypes.some(construct => construct.type === 'ChoiceRule');
+		let hasGenerator = parserResult.hasGenerator;
 
 		if(!hasGenerator && extraTextExists) {
-			for(const extraConstructTypeArray of extraConstructTypes) {
-				hasGenerator = extraConstructTypeArray.some(construct => construct.type === 'ChoiceRule');
-				if(hasGenerator)
-					break;
-			}
+			hasGenerator = extraHasGenerator.includes(true);
 		}
 
 		const correctOrder = [
@@ -144,7 +163,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 					lineStart: construct.lineStart - 1,
 					lineEnd: construct.lineEnd - 1,
 					indexStart: construct.indexStart,
-					indexEnd: construct.indexEnd
+					indexEnd: construct.indexEnd + 1
 				});
 
 				let warningMessage;
@@ -181,7 +200,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						lineStart: construct.lineStart - 1,
 						lineEnd: construct.lineEnd - 1,
 						indexStart: construct.indexStart,
-						indexEnd: construct.indexEnd
+						indexEnd: construct.indexEnd + 1
 					});
 					hasGenerator = true; // Set true to avoid pushing the message again
 				} else {
@@ -193,7 +212,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						lineStart: construct.lineStart - 1,
 						lineEnd: construct.lineEnd - 1,
 						indexStart: construct.indexStart,
-						indexEnd: construct.indexEnd
+						indexEnd: construct.indexEnd + 1
 					});
 					noGeneratorWarningMessages.push(generatorWarningMessage);
 					hasGenerator = true; // Set true to avoid pushing the message again
@@ -244,7 +263,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						lineStart: position.lineStart - 1,
 						lineEnd: position.lineEnd - 1,
 						indexStart: position.indexStart,
-						indexEnd: position.indexEnd
+						indexEnd: position.indexEnd + 1
 					}
 
 					if(!containsSyntaxErrorInLocation(range)) {
@@ -269,7 +288,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						lineStart: usedPosition.lineStart - 1,
 						lineEnd: usedPosition.lineEnd - 1,
 						indexStart: usedPosition.indexStart,
-						indexEnd: usedPosition.indexEnd
+						indexEnd: usedPosition.indexEnd + 1
 					};
 
 					if(!containsSyntaxErrorInLocation(range) && !containsStratificationErrorInLocation(range)) {
@@ -737,15 +756,19 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
-	return [syntaxErrorRanges.concat(stratificationErrorRanges), 
+	return [syntaxErrorRanges, 
+		stratificationErrorRanges, 
 		finalFullLineWarningRanges, 
 		stratificationWarningRanges,
-		syntaxErrorMessages.concat(stratificationErrorMessages), 
+		syntaxErrorMessages, 
+		stratificationErrorMessages, 
 		finalFullLineWarningMessages, 
 		stratificationWarningMessages,
 		predicateHoverRanges, predicateHoverMessages,
 		definedPredicates, usedPredicates, 
-		constructTypes
+		constructTypes,
+		unsafeVariablesErrorRanges,
+		unsafeVariablesMessages
 	 ];
 
 	

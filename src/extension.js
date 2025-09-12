@@ -52,23 +52,33 @@ async function getResults(text, name, extraText) {
 	usedPredicates = data[9];
 	constructTypes = data[10];
 
-	const errorRanges = [];
+	const syntaxErrorRanges = [];
+	const stratificationErrorRanges = [];
 	const fullLineWarningRanges = [];
 	const stratificationWarningRanges = []
 	const predicateHoverRanges = [];
+	const unsafeVariablesRanges = [];
 
-	const errorMessages = data[3];
-	const fullLineWarningMessages = data[4];
-	const stratificationWarningMessages = data[5];
-	const predicateHoverMessages = data[7];
+	const syntaxErrorMessages = data[4];
+	const stratificationErrorMessages = data[5];
+	const fullLineWarningMessages = data[6];
+	const stratificationWarningMessages = data[7];
+	const predicateHoverMessages = data[9];
+	const unsafeVariablesMessages = data[14];
+
 	
-	if(data[0])		// syntaxErrorRanges + stratificationErrorRanges
+	if(data[0])		// syntaxErrorRanges
 		data[0].forEach(range => {
-			errorRanges.push(convertRange(range));
+			syntaxErrorRanges.push(convertRange(range));
 		})
 
-	if(data[1]) 	// orderingWarningRanges + noGeneratorWarningRange + noCommentWarningRanges
-		data[1].forEach(warning => {
+	if(data[1])		// stratificationErrorRanges
+		data[1].forEach(range => {
+			stratificationErrorRanges.push(convertRange(range));
+		})
+
+	if(data[2]) 	// orderingWarningRanges + noGeneratorWarningRange + noCommentWarningRanges
+		data[2].forEach(warning => {
 			const range = warning.range;
 			fullLineWarningRanges.push({
 				range: convertRange(range),
@@ -76,19 +86,23 @@ async function getResults(text, name, extraText) {
 			});
 		})
 
-	if(data[2])		// stratificationWarningRanges
-		data[2].forEach(range => {
+	if(data[3])		// stratificationWarningRanges
+		data[3].forEach(range => {
 			stratificationWarningRanges.push(convertRange(range));
 		})
 
-	if(data[6])		// predicateHoverRanges
-		data[6].forEach(range => {
+	if(data[8])		// predicateHoverRanges
+		data[8].forEach(range => {
 			predicateHoverRanges.push(convertRange(range));
 		})
 
-	return [data, errorRanges, fullLineWarningRanges, stratificationWarningRanges, predicateHoverRanges, 
-		errorMessages, fullLineWarningMessages, stratificationWarningMessages, predicateHoverMessages,
-		definedPredicates, usedPredicates, constructTypes];
+	if(data[13]) // Unsafe Variables
+		data[13].forEach(range => {
+			unsafeVariablesRanges.push(convertRange(range));
+		})
+
+	return [data, syntaxErrorRanges, stratificationErrorRanges, fullLineWarningRanges, stratificationWarningRanges, predicateHoverRanges, unsafeVariablesRanges,
+		syntaxErrorMessages, stratificationErrorMessages, fullLineWarningMessages, stratificationWarningMessages, predicateHoverMessages, unsafeVariablesMessages];
 }	
 
 function getExtraFiles(activeEditor){
@@ -144,23 +158,26 @@ async function loadThings(activeEditor, fileName, diagnosticCollection) {
 	//activeEditor.setDecorations(underlineRed, results[1]);
     //activeEditor.setDecorations(underlineYellow, results[2]);
 
-	//  [data, errorRanges, fullLineWarningRanges, stratificationWarningRanges, predicateHoverRanges, 
-	//	errorMessages, fullLineWarningMessages, stratificationWarningMessages, predicateHoverMessages];
+    const syntaxErrorObjects = results[0][0];
+	const stratificationErrorObjects = results[0][1];
+	const fullLineWarningObjects = results[0][2];
+	const stratificationWarningObjects = results[0][3];
+    const predicateHoverObjects = results[0][8];
+	const unsafeVariablesObjects = results[0][13];
 
-    const errorObjects = results[0][0];
-	const fullLineWarningObjects = results[0][1];
-	const stratificationWarningObjects = results[0][2];
-    const predicateHoverObjects = results[0][6];
+    const syntaxErrorRanges = results[1];
+	const stratificationErrorRanges = results[2]
+	const fullLineWarningRanges = results[3];
+	const stratificationWarningRanges = results[4];
+    const predicateHoverRanges = results[5];
+	const unsafeVariablesRanges = results[6];
 
-    const errorRanges = results[1];
-	const fullLineWarningRanges = results[2];
-	const stratificationWarningRanges = results[3];
-    const predicateHoverRanges = results[4];
-
-    const errorMessages = results[5];
-	const fullLineWarningMessages = results[6];
-	const stratificationWarningMessages = results[7];
-    const predicateMessages = results[8];
+    const syntaxErrorMessages = results[7];
+	const stratificationErrorMessages = results[8];
+	const fullLineWarningMessages = results[9];
+	const stratificationWarningMessages = results[10];
+    const predicateMessages = results[11];
+	const unsafeVariablesMessages = results[12];
     
     // Dispose of the previous hover provider if it exists
     if (hoverDisposable) {
@@ -170,8 +187,20 @@ async function loadThings(activeEditor, fileName, diagnosticCollection) {
     // Register a new hover provider
     hoverDisposable = vscode.languages.registerHoverProvider('*', {
         provideHover(document, position) {
-            for (let i = 0; i < errorObjects.length; i++) {
-                if (errorRanges[i].contains(position)) {
+            for (let i = 0; i < syntaxErrorObjects.length; i++) {
+                if (syntaxErrorRanges[i].contains(position)) {
+					return
+                }
+            }
+
+			for (let i = 0; i < unsafeVariablesObjects.length; i++) {
+                if (unsafeVariablesRanges[i].contains(position)) {
+					return
+                }
+            }
+
+			for (let i = 0; i < stratificationErrorObjects.length; i++) {
+                if (stratificationErrorRanges[i].contains(position)) {
 					return
                 }
             }
@@ -199,26 +228,53 @@ async function loadThings(activeEditor, fileName, diagnosticCollection) {
 
 
 	updateDiagnostics(activeEditor.document, diagnosticCollection, 
-		errorRanges, errorMessages, 
+		syntaxErrorRanges, syntaxErrorMessages,
+		unsafeVariablesRanges, unsafeVariablesMessages,
+		stratificationErrorRanges, stratificationErrorMessages, 
 		fullLineWarningRanges, fullLineWarningMessages,
-		stratificationWarningRanges, stratificationWarningMessages);
+		stratificationWarningRanges, stratificationWarningMessages
+	);
 
     return hoverDisposable;
 }
 
-function updateDiagnostics(document, diagnosticCollection, errorRanges, errorMessages, fullLineWarningRanges, 
-	fullLineWarningMessages, stratificationWarningRanges, stratificationWarningMessages) {
+function updateDiagnostics(document, diagnosticCollection, syntaxErrorRanges, syntaxErrorMessages, unsafeVariablesRanges,  unsafeVariablesMessages, 
+	stratificationErrorRanges, stratificationErrorMessages, fullLineWarningRanges,	fullLineWarningMessages, stratificationWarningRanges, stratificationWarningMessages) {
 
 	const diagnostics = [];
 
-	errorRanges.map(range => {
+	syntaxErrorRanges.map(range => {
 		const diagnostic = new vscode.Diagnostic(
 			range,
-			errorMessages[errorRanges.indexOf(range)],
+			syntaxErrorMessages[syntaxErrorRanges.indexOf(range)],
 			vscode.DiagnosticSeverity.Error
 		)
 
-		diagnostic.code = 'error'
+		diagnostic.code = 'syntax-error'
+
+		diagnostics.push(diagnostic);
+	});
+
+	unsafeVariablesRanges.map(range => {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			unsafeVariablesMessages[unsafeVariablesRanges.indexOf(range)],
+			vscode.DiagnosticSeverity.Error
+		)
+
+		diagnostic.code = 'unsafe-variable-error'
+
+		diagnostics.push(diagnostic);
+	});
+
+	stratificationErrorRanges.map(range => {
+		const diagnostic = new vscode.Diagnostic(
+			range,
+			stratificationErrorMessages[stratificationErrorRanges.indexOf(range)],
+			vscode.DiagnosticSeverity.Error
+		)
+
+		diagnostic.code = 'stratification-error'
 
 		diagnostics.push(diagnostic);
 	});

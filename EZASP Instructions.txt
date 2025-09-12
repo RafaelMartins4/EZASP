@@ -1,0 +1,14 @@
+Instructions for future developers of EZASP:
+ 
+ 	Install antlr4 - npm install antlr4
+
+ 	Inside the generate command (package.json -> "scripts" -> "generate"), you need to change the path to the ANTLR .jar file to match your own ANTLR4 installation. 
+ 
+ 	Whenever you run the generate script (npm run generate) to create updated antlr4 files, you have to manually change some things:
+ 
+ 		Change the generated files (ASPLexer.js, ASPListener.js and ASPParser.js) extensions from .js to .mjs (note: this should be done automatically by the script but you should still check if it worked). 
+		This ensures that these files use ES modules instead of CommonJS. This files are generated in the 'generated/src/parser/grammar' path.
+ 
+ 		Because of the extension change, you might have to change the import of ASPListener on the 4th line of the ASPParser file (simply change .js to .mjs)
+
+ 		Furthermore, the generation of new files might give you a false error in the parser.mjs imports. You can ignore this (or simply rewrite the imports and the error will disappear).
