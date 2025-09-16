@@ -3,7 +3,7 @@ const { loadErrors } = require('./engine/loadErrors.js');
 const { readFileSync, existsSync, writeFileSync } = require('fs');
 const path = require('path');
 const { dirname } = require('path');
-const { error } = require('console');
+const { Console } = require('console');
 
 let disableFeatures;
 
@@ -37,73 +37,11 @@ function convertRange(range){
 	return rangeFinal;
 }
 
-// Useful information when automatically reorganizing the code
+// Useful information when reorganizing the code
 let definedPredicates;
 let usedPredicates;
 let constructTypes;
-
-/**
- * @param {string} text
- */
-async function getResults(text, name, extraText) {
-	const data = await loadErrors(text, name, extraText, disableFeatures);
-
-	definedPredicates = data[8];
-	usedPredicates = data[9];
-	constructTypes = data[10];
-
-	const syntaxErrorRanges = [];
-	const stratificationErrorRanges = [];
-	const fullLineWarningRanges = [];
-	const stratificationWarningRanges = []
-	const predicateHoverRanges = [];
-	const unsafeVariablesRanges = [];
-
-	const syntaxErrorMessages = data[4];
-	const stratificationErrorMessages = data[5];
-	const fullLineWarningMessages = data[6];
-	const stratificationWarningMessages = data[7];
-	const predicateHoverMessages = data[9];
-	const unsafeVariablesMessages = data[14];
-
-	
-	if(data[0])		// syntaxErrorRanges
-		data[0].forEach(range => {
-			syntaxErrorRanges.push(convertRange(range));
-		})
-
-	if(data[1])		// stratificationErrorRanges
-		data[1].forEach(range => {
-			stratificationErrorRanges.push(convertRange(range));
-		})
-
-	if(data[2]) 	// orderingWarningRanges + noGeneratorWarningRange + noCommentWarningRanges
-		data[2].forEach(warning => {
-			const range = warning.range;
-			fullLineWarningRanges.push({
-				range: convertRange(range),
-				type: warning.type
-			});
-		})
-
-	if(data[3])		// stratificationWarningRanges
-		data[3].forEach(range => {
-			stratificationWarningRanges.push(convertRange(range));
-		})
-
-	if(data[8])		// predicateHoverRanges
-		data[8].forEach(range => {
-			predicateHoverRanges.push(convertRange(range));
-		})
-
-	if(data[13]) // Unsafe Variables
-		data[13].forEach(range => {
-			unsafeVariablesRanges.push(convertRange(range));
-		})
-
-	return [data, syntaxErrorRanges, stratificationErrorRanges, fullLineWarningRanges, stratificationWarningRanges, predicateHoverRanges, unsafeVariablesRanges,
-		syntaxErrorMessages, stratificationErrorMessages, fullLineWarningMessages, stratificationWarningMessages, predicateHoverMessages, unsafeVariablesMessages];
-}	
+let hasUnclosedComment = false;
 
 function getExtraFiles(activeEditor){
 	const fileName = activeEditor.document.fileName;
@@ -154,30 +92,70 @@ function getExtraFiles(activeEditor){
 
 let hoverDisposable;
 async function loadThings(activeEditor, fileName, diagnosticCollection) {
-    let results = await getResults(activeEditor.document.getText(), fileName, getExtraFiles(activeEditor));
-	//activeEditor.setDecorations(underlineRed, results[1]);
-    //activeEditor.setDecorations(underlineYellow, results[2]);
+	// The following comment is just so TypeScript does not whine about typing :)
+	/** @type {any} */
+	const errorResults = await loadErrors(activeEditor.document.getText(), fileName, getExtraFiles(activeEditor), disableFeatures);
 
-    const syntaxErrorObjects = results[0][0];
-	const stratificationErrorObjects = results[0][1];
-	const fullLineWarningObjects = results[0][2];
-	const stratificationWarningObjects = results[0][3];
-    const predicateHoverObjects = results[0][8];
-	const unsafeVariablesObjects = results[0][13];
+	definedPredicates = errorResults.definedPredicates;
+	usedPredicates = errorResults.usedPredicates;
+	constructTypes = errorResults.constructTypes
+	hasUnclosedComment = errorResults.hasUnclosedComment;
 
-    const syntaxErrorRanges = results[1];
-	const stratificationErrorRanges = results[2]
-	const fullLineWarningRanges = results[3];
-	const stratificationWarningRanges = results[4];
-    const predicateHoverRanges = results[5];
-	const unsafeVariablesRanges = results[6];
+	const syntaxErrorObjects = errorResults.syntaxErrorRanges;
+	const unsafeVariablesObjects = errorResults.unsafeVariablesErrorRanges;
+	const stratificationErrorObjects = errorResults.stratificationErrorRanges;
+	const fullLineWarningObjects = errorResults.fullLineWarningRanges;
+	const stratificationWarningObjects = errorResults.stratificationWarningRanges;
+    const predicateHoverObjects = errorResults.predicateHoverRanges;
 
-    const syntaxErrorMessages = results[7];
-	const stratificationErrorMessages = results[8];
-	const fullLineWarningMessages = results[9];
-	const stratificationWarningMessages = results[10];
-    const predicateMessages = results[11];
-	const unsafeVariablesMessages = results[12];
+	const syntaxErrorMessages = errorResults.syntaxErrorMessages
+	const unsafeVariablesMessages = errorResults.unsafeVariablesMessages
+	const stratificationErrorMessages = errorResults.stratificationErrorMessages
+	const fullLineWarningMessages = errorResults.fullLineWarningMessages
+	const stratificationWarningMessages = errorResults.stratificationWarningMessages
+	const predicateHoverMessages = errorResults.predicateHoverMessages
+	
+	// Converting ranges
+	const syntaxErrorRanges = [];
+	const stratificationErrorRanges = [];
+	const fullLineWarningRanges = [];
+	const stratificationWarningRanges = []
+	const predicateHoverRanges = [];
+	const unsafeVariablesRanges = [];
+
+	if(errorResults.syntaxErrorRanges)		// syntaxErrorRanges
+		errorResults.syntaxErrorRanges.forEach(range => {
+			syntaxErrorRanges.push(convertRange(range));
+		})
+
+	if(errorResults.unsafeVariablesErrorRanges) // Unsafe Variables
+		errorResults.unsafeVariablesErrorRanges.forEach(range => {
+			unsafeVariablesRanges.push(convertRange(range));
+		})
+
+	if(errorResults.stratificationErrorRanges)		// stratificationErrorRanges
+		errorResults.stratificationErrorRanges.forEach(range => {
+			stratificationErrorRanges.push(convertRange(range));
+		})
+
+	if(errorResults.fullLineWarningRanges) 	// orderingWarningRanges + noGeneratorWarningRange + noCommentWarningRanges
+		errorResults.fullLineWarningRanges.forEach(warning => {
+			const range = warning.range;
+			fullLineWarningRanges.push({
+				range: convertRange(range),
+				type: warning.type
+			});
+		})
+
+	if(errorResults.stratificationWarningRanges)		// stratificationWarningRanges
+		errorResults.stratificationWarningRanges.forEach(range => {
+			stratificationWarningRanges.push(convertRange(range));
+		})
+
+	if(errorResults.predicateHoverRanges)		// predicateHoverRanges
+		errorResults.predicateHoverRanges.forEach(range => {
+			predicateHoverRanges.push(convertRange(range));
+		})
     
     // Dispose of the previous hover provider if it exists
     if (hoverDisposable) {
@@ -219,7 +197,7 @@ async function loadThings(activeEditor, fileName, diagnosticCollection) {
 
             for (let i = 0; i < predicateHoverObjects.length; i++) {
                 if (predicateHoverRanges[i].contains(position)) {
-                	const hoverMessage = new vscode.Hover(predicateMessages[i]);
+                	const hoverMessage = new vscode.Hover(predicateHoverMessages[i]);
 					return hoverMessage;
                 }
             }            
@@ -378,6 +356,7 @@ async function activate(context) {
 	const initClingoConfig = vscode.commands.registerCommand('createConfig', function () {
 
 		const sampleConfig = readFileSync(`${context.asAbsolutePath("")}/src/sampleConfig.json`);
+		// @ts-ignore
 		writeFileSync(`${dirname(vscode.window.activeTextEditor.document.fileName)}/config.json`, sampleConfig);
 	});
 
@@ -389,6 +368,7 @@ async function activate(context) {
 function deactivate() { }
 
 class CodeActionProvider {
+  // @ts-ignore
   provideCodeActions(document, range, context, token) {
     const actions = [];
 
@@ -416,215 +396,201 @@ class CodeActionProvider {
   }
 }
 
-
-// TODO: Não esquecer de adicionar algo que verifique se existem unclosed comments
-// Se existirem, mostrar uma mensagem a dizer para resolver primeiro esse erro, antes de reorganizar o código
-
-// TODO: Quando estiver implementado, verificar o que acontece se as linhas tiverem whitespaces no final
-// Neste momento, ñ tenho a certeza se isso não fará com que dps de reorganizar as linhas fiquem whitespaces no inicio
-// Verificar também se o indexEnd é o correto, ou se é necessário fazer +1 ou -1
-
 function fixOrderingHandler(document) {
-	const lines = document.getText().split(/\r?\n/);
+	if(hasUnclosedComment) {
+		vscode.window.showErrorMessage('Detected an Unclosed Block Comment in the program. Please fix this issue before reorganizing the order of the constructs.')
+	} else {
 
-    const expandedRanges = [];
+		const lines = document.getText().split(/\r?\n/);
 
-    // Step 1: Extend Downwards
-    for (const construct of constructTypes) {
-        let { lineStart, lineEnd, indexStart, indexEnd, type } = construct;
-        let endLine = lineEnd - 1;
-        let endIndex = indexEnd + 1;
+		const expandedRanges = [];
 
-        let i = endLine;
-        let j = endIndex;
+		// Step 1: Extend Downwards
+		for (const construct of constructTypes) {
+			let { lineStart, lineEnd, indexStart, indexEnd, type } = construct;
+			let endLine = lineEnd - 1;
+			let endIndex = indexEnd + 1;
 
-        let line = lines[i];
-        let rest = line.slice(j);
+			let i = endLine;
+			let j = endIndex;
 
-        while (true) {
-            let restTrimmed = rest.trimStart();
-            if (restTrimmed.startsWith('%*')) {
-                // Block comment
-                let blockLine = i;
-                let blockIndex = line.indexOf('%*', j) + 2;
-                let foundEnd = false;
-                while (blockLine < lines.length) {
-                    let blockEndIdx = lines[blockLine].indexOf('*%', blockIndex);
-                    if (blockEndIdx !== -1) {
-                        i = blockLine;
-                        j = blockEndIdx + 2;
-                        line = lines[i];
-                        rest = line.slice(j);
-                        foundEnd = true;
-                        break;
-                    }
-                    blockLine++;
-                    blockIndex = 0;
-                }
+			let line = lines[i];
+			let rest = line.slice(j);
 
-				// If the closing token is found AFTER the construct's line, don't search for any other comments
-				if(i > endLine)
+			
+
+			while (true) {
+				let restTrimmed = rest.trimStart();
+				if (restTrimmed.startsWith('%*')) {
+					// Block comment
+					let blockLine = i;
+					let blockIndex = line.indexOf('%*', j) + 2;
+					let foundEnd = false;
+					while (blockLine < lines.length) {
+						let blockEndIdx = lines[blockLine].indexOf('*%', blockIndex);
+						if (blockEndIdx !== -1) {
+							i = blockLine;
+							j = blockEndIdx + 2;
+							line = lines[i];
+							rest = line.slice(j);
+							foundEnd = true;
+							break;
+						}
+						blockLine++;
+						blockIndex = 0;
+					}
+
+					// If the closing token is found AFTER the construct's line, don't search for any other comments
+					if(i > endLine)
+						break;
+			
+					if (!foundEnd) {
+						// Shouldn't happen but check anyways
+						console.error('Unclosed block comment detected.');
+						break;
+					}  
+				} else if (restTrimmed.startsWith('%') || restTrimmed === '') {
+					// Line comment or empty line
+					j = line.length;
+					rest = '';
 					break;
-		
-                if (!foundEnd) {
-					// Shouldn't happen but check anyways
-					console.error('Unclosed block comment detected.');
+				} else {
+					// There's another statement or code after the dot
 					break;
-				}  
-            } else if (restTrimmed.startsWith('%') || restTrimmed === '') {
-                // Line comment or empty line
-                j = line.length;
-                rest = '';
-                break;
-            } else {
-                // There's another statement or code after the dot
-                break;
-            }
-        }
-
-        expandedRanges.push({
-            type,
-            lineStart,
-            lineEnd: i + 1,
-            indexStart,
-            indexEnd: j
-        });
-    }
-
-	console.log('expanded ranges:')
-	console.log(expandedRanges)
-
-
-    // Step 2: Extend Upwards
-    const finalRanges = [];
-
-	for (let k = 0; k < expandedRanges.length; k++) {
-		const curr = expandedRanges[k];
-		const prev = expandedRanges[k - 1];
-
-		// Initial start point: either beginning of file or end of previous construct
-		let scanLine = (k === 0) ? 0 : prev.lineEnd - 1;
-		let scanIndex = (k === 0) ? 0 : prev.indexEnd;
-
-		let adjustedLine = curr.lineStart - 1;
-		let adjustedIndex = curr.indexStart;
-
-		while (scanLine < curr.lineStart - 1 || (scanLine === curr.lineStart - 1 && scanIndex < curr.indexStart)) {
-			const line = lines[scanLine];
-			const rest = line.slice(scanIndex).trim();
-
-			if (rest.startsWith('%') || rest.startsWith('%*')) {
-				// Found a comment — adjust current construct to begin here
-				adjustedLine = scanLine;
-				adjustedIndex = scanIndex;
-				break;
-			}
-
-			if (rest !== '') {
-				break;
-			}
-
-			scanLine++;
-			scanIndex = 0;
-		}
-
-		finalRanges.push({
-			type: curr.type,
-			lineStart: adjustedLine + 1,
-			lineEnd: curr.lineEnd,
-			indexStart: adjustedIndex,
-			indexEnd: curr.indexEnd
-		});
-	}
-
-	console.log('final ranges: ')
-	console.log(finalRanges)
-
-	// Step 3: Reorganize constructs by type
-	const ezaspOrder = [
-		'Constant',
-		'Fact',
-		'ChoiceRule',
-		'DefiniteRule',
-		'Constraint',
-		'Optimization',
-		'Show'
-	];
-
-	const constructsByType = {};
-	for (const type of ezaspOrder) constructsByType[type] = [];
-	for (let i = 0; i < finalRanges.length; i++) {
-		const { type, lineStart, lineEnd, indexStart, indexEnd } = finalRanges[i];
-		constructsByType[type]?.push({ lineStart, lineEnd, indexStart, indexEnd });
-	}
-
-	// Step 4: Reorder constructs in critical sections (Facts, Choice Rules and Definite Rules)
-	// These sections can define and use predicates, so it is possible to minimize stratification warnings by reordering them inside their own section
-	// All other sections (Constants, Constraints, etc.) do not need to be reordered, given that their intra-section order will never 
-	// cause stratification warnings (as they never define and use predicates simultaneously)
-
-	const reorderedFacts = reorderSection(constructsByType['Fact']);
-
-	const reorderedChoiceRules = reorderSection(constructsByType['ChoiceRule']);
-
-	const reorderedDefiniteRules = reorderSection(constructsByType['DefiniteRule']);
-	
-	if(reorderedFacts.hasCycle) {
-		vscode.window.showWarningMessage('Dependency cycle detected in Facts section. As a result, stratification warnings cannot be solved automatically in this section.');
-	} 
-	
-	constructsByType['Fact'] = reorderedFacts.sorted;
-	
-	if(reorderedChoiceRules.hasCycle) {
-		vscode.window.showWarningMessage('Dependency cycle detected in Choice Rules section. As a result, stratification warnings cannot be solved automatically in this section.');
-	} 
-	
-	constructsByType['ChoiceRule'] = reorderedChoiceRules.sorted;
-
-	if(reorderedDefiniteRules.hasCycle) {
-		vscode.window.showWarningMessage('Dependency cycle detected in Definite Rules section. As a result, stratification warnings cannot be solved automatically in this section.');
-	}
-	
-	constructsByType['DefiniteRule'] = reorderedDefiniteRules.sorted;
-
-	// Step 5: Rewrite the code in the editor with the new ordering
-	let result = [];
-
-	for (const type of ezaspOrder) {
-		for (const { lineStart, lineEnd, indexStart, indexEnd } of constructsByType[type]) {
-			if (lineStart === lineEnd) {
-				// Single-line construct
-				result.push(lines[lineStart - 1].slice(indexStart, indexEnd));
-			} else {
-				// Multi-line construct
-				let constructLines = [];
-				constructLines.push(lines[lineStart - 1].slice(indexStart));
-				for (let l = lineStart; l < lineEnd - 1; l++) {
-					constructLines.push(lines[l]);
 				}
-				constructLines.push(lines[lineEnd - 1].slice(0, indexEnd));
-				result.push(constructLines.join('\n'));
+			}
+
+			expandedRanges.push({
+				type,
+				lineStart,
+				lineEnd: i + 1,
+				indexStart,
+				indexEnd: j
+			});
+		}
+
+		// Step 2: Extend Upwards
+		const finalRanges = [];
+
+		for (let k = 0; k < expandedRanges.length; k++) {
+			const curr = expandedRanges[k];
+			const prev = expandedRanges[k - 1];
+
+			// Initial start point: either beginning of file or end of previous construct
+			let scanLine = (k === 0) ? 0 : prev.lineEnd - 1;
+			let scanIndex = (k === 0) ? 0 : prev.indexEnd;
+
+			let adjustedLine = curr.lineStart - 1;
+			let adjustedIndex = curr.indexStart;
+
+			while (scanLine < curr.lineStart - 1 || (scanLine === curr.lineStart - 1 && scanIndex < curr.indexStart)) {
+				const line = lines[scanLine];
+				const rest = line.slice(scanIndex).trim();
+
+				if (rest.startsWith('%') || rest.startsWith('%*')) {
+					// Found a comment — adjust current construct to begin here
+					adjustedLine = scanLine;
+					adjustedIndex = scanIndex;
+					break;
+				}
+
+				if (rest !== '') {
+					break;
+				}
+
+				scanLine++;
+				scanIndex = 0;
+			}
+
+			finalRanges.push({
+				type: curr.type,
+				lineStart: adjustedLine + 1,
+				lineEnd: curr.lineEnd,
+				indexStart: adjustedIndex,
+				indexEnd: curr.indexEnd
+			});
+		}
+
+		// Step 3: Reorganize constructs by type
+		const ezaspOrder = [
+			'Constant',
+			'Fact',
+			'ChoiceRule',
+			'DefiniteRule',
+			'Constraint',
+			'Optimization',
+			'Show'
+		];
+
+		const constructsByType = {};
+		for (const type of ezaspOrder) constructsByType[type] = [];
+		for (let i = 0; i < finalRanges.length; i++) {
+			const { type, lineStart, lineEnd, indexStart, indexEnd } = finalRanges[i];
+			constructsByType[type]?.push({ lineStart, lineEnd, indexStart, indexEnd });
+		}
+
+		// Step 4: Reorder constructs in critical sections (Facts, Choice Rules and Definite Rules)
+		// These sections can define and use predicates, so it is possible to minimize stratification warnings by reordering them inside their own section
+		// All other sections (Constants, Constraints, etc.) do not need to be reordered, given that their intra-section order will never 
+		// cause stratification warnings (as they never define and use predicates simultaneously)
+
+		const reorderedFacts = reorderSection(constructsByType['Fact']);
+
+		const reorderedChoiceRules = reorderSection(constructsByType['ChoiceRule']);
+
+		const reorderedDefiniteRules = reorderSection(constructsByType['DefiniteRule']);
+		
+		if(reorderedFacts.hasCycle) {
+			vscode.window.showWarningMessage('Dependency cycle detected in Facts section. As a result, stratification warnings cannot be solved automatically in this section.');
+		} 
+		
+		constructsByType['Fact'] = reorderedFacts.sorted;
+		
+		if(reorderedChoiceRules.hasCycle) {
+			vscode.window.showWarningMessage('Dependency cycle detected in Choice Rules section. As a result, stratification warnings cannot be solved automatically in this section.');
+		} 
+		
+		constructsByType['ChoiceRule'] = reorderedChoiceRules.sorted;
+
+		if(reorderedDefiniteRules.hasCycle) {
+			vscode.window.showWarningMessage('Dependency cycle detected in Definite Rules section. As a result, stratification warnings cannot be solved automatically in this section.');
+		}
+		
+		constructsByType['DefiniteRule'] = reorderedDefiniteRules.sorted;
+
+		// Step 5: Rewrite the code in the editor with the new ordering
+		let result = [];
+
+		for (const type of ezaspOrder) {
+			for (const { lineStart, lineEnd, indexStart, indexEnd } of constructsByType[type]) {
+				if (lineStart === lineEnd) {
+					// Single-line construct
+					result.push(lines[lineStart - 1].slice(indexStart, indexEnd));
+				} else {
+					// Multi-line construct
+					let constructLines = [];
+					constructLines.push(lines[lineStart - 1].slice(indexStart));
+					for (let l = lineStart; l < lineEnd - 1; l++) {
+						constructLines.push(lines[l]);
+					}
+					constructLines.push(lines[lineEnd - 1].slice(0, indexEnd));
+					result.push(constructLines.join('\n'));
+				}
 			}
 		}
+
+		const finalText = result.join('\n\n');
+
+		// Apply it back to the document
+		const edit = new vscode.WorkspaceEdit();
+		const fullRange = new vscode.Range(
+			document.positionAt(0),
+			document.positionAt(document.getText().length)
+		);
+		edit.replace(document.uri, fullRange, finalText);
+
+		vscode.workspace.applyEdit(edit);
 	}
-
-	const finalText = result.join('\n\n');
-
-	console.log('result:');
-	console.log(result);
-
-	/* console.log('Reorganized code:');
-	console.log(finalText) */
-
-	// Apply it back to the document
-	const edit = new vscode.WorkspaceEdit();
-	const fullRange = new vscode.Range(
-		document.positionAt(0),
-		document.positionAt(document.getText().length)
-	);
-	edit.replace(document.uri, fullRange, finalText);
-
-	vscode.workspace.applyEdit(edit);
 }
 
 function isRangeWithinConstruct(range, construct) {
@@ -667,13 +633,7 @@ function reorderSection(constructs) {
 
 	const dependencyGraph = buildDependencyGraph(constructs);
 
-	/* console.log('Dependency Graph:');
-	console.log(dependencyGraph);
- */
 	const sortResult = topologicalSort(dependencyGraph);
-
-	/* console.log('Topological Sort Result:');
-	console.log(sortResult); */
 
 	return sortResult;
 }

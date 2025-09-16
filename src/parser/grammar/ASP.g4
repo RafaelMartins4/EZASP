@@ -53,7 +53,7 @@ show:
        | (show_nothing DOT);
 
 show_atoms: '#show' CONSTANT '/' NUMBER;
-show_terms: '#show' term ':' literal (',' literal)*;
+show_terms: '#show' term (':' body)?;
 show_nothing: '#show';
 
 // Comments (line, block and unclosed)

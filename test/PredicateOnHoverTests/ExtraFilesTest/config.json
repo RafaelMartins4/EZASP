@@ -3,10 +3,10 @@
     "version": "0.1.0",
     "description": "Documentation: https://github.com/potassco/guide/releases/download/v2.2.0/guide.pdf",
     "author": "John Doe",
-    "additionalFiles": [],
+    "additionalFiles": ["PredicateOnHoverExtra1.lp", "PredicateOnHoverExtra2.lp"],
     "disableFeatures":{
         "syntaxChecking":"false",
-        "orderErrors":"false",
+        "orderErrors":"true",
         "predicateErrors":"false",
         "hoverPredicates":"false",
         "commentWarnings":"true",

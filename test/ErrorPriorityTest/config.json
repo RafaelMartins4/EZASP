@@ -9,8 +9,8 @@
         "orderErrors":"false",
         "predicateErrors":"false",
         "hoverPredicates":"false",
-        "commentWarnings":"true",
-        "unsafeVariables":"true"
+        "commentWarnings":"false",
+        "unsafeVariables":"false"
     },
     "args": {
         "verboseMode": 1,

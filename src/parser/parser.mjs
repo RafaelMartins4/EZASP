@@ -2,7 +2,6 @@ import antlr4 from 'antlr4';
 import ASPLexer from '../../generated/src/parser/grammar/ASPLexer.mjs';
 import ASPParser from '../../generated/src/parser/grammar/ASPParser.mjs';
 import ASPListener from '../../generated/src/parser/grammar/ASPListener.mjs';
-import { error } from 'console';
 
 let errorRangeSize = 2;
 
@@ -121,7 +120,7 @@ class ASPLexerErrorListener extends antlr4.error.ErrorListener {
         let indexEnd = charPositionInLine + errorRangeSize;
 
         // Check if the error is at the end of the line
-        const currentLineText = lines[line - 1]; // Get the current line text
+        const currentLineText = lines[line - 1];
 
         if (indexEnd > currentLineText.length) {
             // Move to the next line if it exists
@@ -160,6 +159,7 @@ class VerboseASPListener extends ASPListener {
         this.syntaxErrors = [];
         this.constructTypes = [];
         this.hasGenerator = false;
+        this.hasUnclosedComment = false;
         this.statementsByLine = new Map();
         this.definedPredicates = new Map();
         this.usedPredicates = new Map();
@@ -192,35 +192,37 @@ class VerboseASPListener extends ASPListener {
     enterConstant(ctx) {
         if (!ctx.start || !ctx.stop) return;
 
-        const predicateName = ctx.CONSTANT().getText();
-        const predicateKey = predicateName + '/0'; // Constants are treated as predicates with arity 0
+        if(ctx.CONSTANT()) {
+            const predicateName = ctx.CONSTANT().getText();
+            const predicateKey = predicateName + '/0'; // Constants are treated as predicates with arity 0
 
-        const lineStart = ctx.start.line;
-        const lineEnd = ctx.stop.line;
-        const indexStart = ctx.start.column
-        let indexEnd = ctx.stop.column;
+            const lineStart = ctx.start.line;
+            const lineEnd = ctx.stop.line;
+            const indexStart = ctx.start.column
+            let indexEnd = ctx.stop.column;
 
-        if(indexEnd ==  indexStart) {
-            indexEnd += predicateName.length;
+            if(indexEnd ==  indexStart) {
+                indexEnd += predicateName.length;
+            }
+
+            if (!this.definedPredicates.has(predicateKey)) {
+                this.definedPredicates.set(predicateKey, []);
+            }
+            this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+
+            this.constructTypes.push({
+                type: 'Constant',
+                lineStart: ctx.start.line,
+                lineEnd: ctx.stop.line,
+                indexStart: ctx.start.column,
+                indexEnd: ctx.stop.column,
+            });
+
+            if(!this.statementsByLine.has(ctx.start.line)) {
+                this.statementsByLine.set(ctx.start.line, []);
+            }
+            this.statementsByLine.get(ctx.start.line).push(ctx.getText());
         }
-
-        if (!this.definedPredicates.has(predicateKey)) {
-            this.definedPredicates.set(predicateKey, []);
-        }
-        this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-
-        this.constructTypes.push({
-            type: 'Constant',
-            lineStart: ctx.start.line,
-            lineEnd: ctx.stop.line,
-            indexStart: ctx.start.column,
-            indexEnd: ctx.stop.column,
-        });
-
-        if(!this.statementsByLine.has(ctx.start.line)) {
-            this.statementsByLine.set(ctx.start.line, []);
-        }
-        this.statementsByLine.get(ctx.start.line).push(ctx.getText());
     }
 
     enterFact(ctx) {
@@ -319,11 +321,19 @@ class VerboseASPListener extends ASPListener {
                             body_atoms.forEach(body_atom => {
                                 if(body_atom.literal()) {
                                     const literal = body_atom.literal();
-                                    const terms = literal.classical_atom().atom().term();
                                     const hasNot = literal.NOT() !== null;
+                                    const atom = literal.classical_atom().atom();
+                                    if (!atom || !atom.start || !atom.stop) return;
+                                    const predicateName = atom.CONSTANT().getText();
+                                    const terms = atom.term();
+                                    const arity = terms ? terms.length : 0;
+                                    
                                     if(terms) {
                                         terms.forEach(term => {
+                                            this.processTerm(term, this.usedPredicates, true);
+
                                             const result = this.collectVariablesFromTerm(term);
+
                                             if(result.skip) {
                                                 // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), 
                                                 // a 'undefined operation' message is shown. This could be implemented in this parser, however it requires tracking the typing of every element 
@@ -337,6 +347,22 @@ class VerboseASPListener extends ASPListener {
                                             }
                                         });
                                     }
+
+                                    const predicateKey = `${predicateName}/${arity}`;
+                                    const lineStart = atom.start.line;
+                                    const lineEnd = atom.stop.line;
+                                    const indexStart = atom.start.column;
+                                    let indexEnd = atom.stop.column;
+
+                                    if(indexEnd == indexStart) {
+                                        indexEnd += predicateName.length;
+                                    }
+
+                                    if (!this.usedPredicates.has(predicateKey)) {
+                                        this.usedPredicates.set(predicateKey, []);
+                                    }
+                                    this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            
                                 } else if(body_atom.builtIn_atom()) {
                                     const hasNot = body_atom.NOT() !== null;
                                     const builtIn_atom = body_atom.builtIn_atom();
@@ -622,7 +648,9 @@ class VerboseASPListener extends ASPListener {
                             const termResult = this.collectVariablesFromTerm(term);
 
                             if(termResult.skip) {
-                                // TODO: Add skip logic
+                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                // As a result, we will simply skip these cases and not throw any errors.
                             } else {
                                 termResult.allVars.forEach(v => {
                                     totalVariables.add(v);
@@ -1199,11 +1227,16 @@ class VerboseASPListener extends ASPListener {
         let groundedVariables = new Set();
         let linkedVariables = [];
 
+        let contextVariables = [];
+        let groundedContextVariables = [];
+        let linkedContextVariables = [];
+
         if(ctx.show_terms()) {
             const show = ctx.show_terms();
 
             const showTerm = show.term();
             if(showTerm) {
+                this.processTerm(showTerm, this.usedPredicates, false);
                 const result = this.collectVariablesFromTerm(showTerm);
                 if(result.skip) {
                     // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
@@ -1214,28 +1247,69 @@ class VerboseASPListener extends ASPListener {
                 }
             }
 
-            const literals = show.literal();
-            if(literals) {
-                literals.forEach(literal => {
-                    const hasNot = literal.NOT() !== null;
-                    const terms = literal.classical_atom().atom().term();
-
-                    if(terms) {
-                        terms.forEach(term => {
-                            const result = this.collectVariablesFromTerm(term);
-                            if(result.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors.
-                            } else {
-                                result.allVars.forEach(v => totalVariables.add(v));
-                                if(!hasNot) {
-                                    result.groundableVars.forEach(v => groundedVariables.add(v));
-                                }
+            const body = show.body();
+            if(body) {
+                const bodyAtoms = body.body_atoms();
+                if(bodyAtoms) {
+                    bodyAtoms.forEach(body_atom => {
+                        if(body_atom.literal()) {
+                            const literal = body_atom.literal();
+                            const hasNot = literal.NOT() !== null;
+                            const terms = literal.classical_atom().atom().term();
+                            if(terms) {
+                                terms.forEach(term => {
+                                    const result = this.collectVariablesFromTerm(term);
+                                    if(result.skip) {
+                                        // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                        // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                        // As a result, we will simply skip these cases and not throw any errors.
+                                    } else {
+                                        result.allVars.forEach(v => totalVariables.add(v));
+                                        if(!hasNot) {
+                                            result.groundableVars.forEach(v => groundedVariables.add(v));
+                                        }
+                                    }
+                                });
                             }
-                        });
-                    }
-                })
+                        } else if(body_atom.builtIn_atom()) {
+                            const hasNot = body_atom.NOT() !== null;
+                            const builtIn_atom = body_atom.builtIn_atom();
+
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            result.vars.forEach(v => totalVariables.add(v));
+                            result.groundedVars.forEach(v => groundedVariables.add(v));
+                            result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
+                        } else if(body_atom.aggregate_atom_body()) {
+                            const aggregate_atom = body_atom.aggregate_atom_body();
+                            const term = aggregate_atom.term();
+                            if(term) {
+                                const termResult = this.collectVariablesFromTerm(term);
+                                if(termResult.skip) {
+                                    // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                    // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                    // As a result, we will simply skip these cases and not throw any errors.
+                                } else {
+                                    termResult.allVars.forEach(v => totalVariables.add(v));
+                                }
+                                
+                                // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
+                                // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
+                                let aggregateVariables = new Set();
+                                let aggregateGroundedVariables = new Set();
+                                let aggregateLinkedVariables = [];
+
+                                const result = this.collectVariablesFromAggregateAtomBody(aggregate_atom);
+                                result.aggregateVariables.forEach(v => aggregateVariables.add(v));
+                                result.aggregateGroundedVariables.forEach(v => aggregateGroundedVariables.add(v));
+                                result.aggregateLinkedVariables.forEach(linkedVar => aggregateLinkedVariables.push(linkedVar));
+                            
+                                contextVariables.push(aggregateVariables);
+                                groundedContextVariables.push(aggregateGroundedVariables);
+                                linkedContextVariables.push(aggregateLinkedVariables);
+                            }
+                        }
+                    })
+                }
             }
         }
 
@@ -1523,6 +1597,8 @@ class VerboseASPListener extends ASPListener {
             message: "Error: Unclosed Block Comment (starting at line " + ctx.start.line + ", column " + ctx.start.column + ")",
             offendingSymbol: null
         });
+
+        this.hasUnclosedComment = true;
     }
 
     processTerm(term, predicateMap, isArgument) {
@@ -2079,6 +2155,10 @@ class VerboseASPListener extends ASPListener {
     getHasGenerator() {
         return this.hasGenerator;
     }
+
+    getHasUnclosedComment() {
+        return this.hasUnclosedComment;
+    }
 }
 
 // Parse function with custom error handling
@@ -2105,6 +2185,7 @@ export function parse(input) {
         walker.walk(listener, tree);
 
         const hasGenerator = listener.getHasGenerator();
+        const hasUnclosedComment = listener.getHasUnclosedComment();
         const parserSyntaxErrors = parserErrorListener.getSyntaxErrors();
         const listenerSyntaxErrors = listener.getSyntaxErrors();
         const tokenErrors = lexerErrorListener.getTokenErrors();
@@ -2115,7 +2196,10 @@ export function parse(input) {
         const lineRanges = listener.getLineRanges();
         const unsafeVariables = listener.getUnsafeVariables();
 
-        return {syntaxErrors: [...parserSyntaxErrors, ...listenerSyntaxErrors], tokenErrors, constructTypes, definedPredicates, usedPredicates, statementsByLine, lineRanges, unsafeVariables, hasGenerator};
+        console.log(constructTypes)
+        console.log(statementsByLine)
+        return {syntaxErrors: [...parserSyntaxErrors, ...listenerSyntaxErrors], tokenErrors, constructTypes, definedPredicates, usedPredicates, statementsByLine, lineRanges, unsafeVariables, 
+            hasGenerator, hasUnclosedComment};
 
     } catch (error) {
         console.error('Unexpected error during parsing:', error);

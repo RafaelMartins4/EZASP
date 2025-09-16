@@ -6,11 +6,11 @@
     "additionalFiles": [],
     "disableFeatures":{
         "syntaxChecking":"false",
-        "orderErrors":"false",
-        "predicateErrors":"false",
+        "orderErrors":"true",
+        "predicateErrors":"true",
         "hoverPredicates":"false",
-        "commentWarnings":"true",
-        "unsafeVariables":"true"
+        "commentWarnings":"false",
+        "unsafeVariables":"false"
     },
     "args": {
         "verboseMode": 1,

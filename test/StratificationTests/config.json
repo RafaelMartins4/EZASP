@@ -6,7 +6,7 @@
     "additionalFiles": [],
     "disableFeatures":{
         "syntaxChecking":"false",
-        "orderErrors":"false",
+        "orderErrors":"true",
         "predicateErrors":"false",
         "hoverPredicates":"false",
         "commentWarnings":"true",

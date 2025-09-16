@@ -1,0 +1,159 @@
+%* This is a block comment *%
+p1(X) :- base(X).
+
+
+Resultado - Passa
+
+-------------------------------------------------------------
+
+%* 
+This is a multiline
+block comment.
+*%
+p2(X) :- base(X).
+
+
+Resultado - Clingo WASM Error: -:1:6-8: error: syntax error, unexpected <IDENTIFIER>
+
+-------------------------------------------------------------
+
+% test %* Describes the rule 
+%* p3 *% 
+p3(X) :- p2(X), base(X).
+
+
+Resultado - Passa
+
+-------------------------------------------------------------
+
+p4(X) :- base(X). %* Inline block comment *%
+
+Resultado - Passa
+
+-------------------------------------------------------------
+
+p5(X) :- base(X). %* comment *% base(2).
+
+Resultado - Passa
+
+-------------------------------------------------------------
+
+%* First block *%%* Second block *%
+p6(X) :- base(X).
+
+Resultado - Passa
+
+-------------------------------------------------------------
+
+%* First block *%%* Second 
+block *%
+p6(X) :- base(X).
+
+Resultado - Clingo WASM Error: -:1:14-16: error: syntax error, unexpected :-
+
+-------------------------------------------------------------
+
+%* First 
+block *%%* Second block *%
+p6(X) :- base(X).
+
+Resultado - Clingo WASM Error: -:1:14-16: error: syntax error, unexpected :-
+
+-------------------------------------------------------------
+
+%* With Line comment after *% % test
+p7(X) :- base(X).
+
+Resultado - Passa 
+
+-------------------------------------------------------------
+
+%* With Line comment 
+after *% % test
+p7(X) :- base(X).
+
+Resultado - Clingo WASM Error: -:1:14-16: error: syntax error, unexpected :-
+
+-------------------------------------------------------------
+
+%* This comment never ends
+p8(X) :- base(X).
+
+Resultado - Passa, mas não deveria passar porque o comentário nunca é fechado
+
+-------------------------------------------------------------
+
+p11(X) :- base(X). %* Multi line
+comment
+after construct*%
+
+
+Resultado - Clingo WASM Error: -:2:1-6: error: syntax error, unexpected <IDENTIFIER>
+
+-------------------------------------------------------------
+
+%* This comment never ends
+base(2).
+
+Resultado - Passa, sendo que o answer set encontrado é {base(2)}.
+
+-------------------------------------------------------------
+
+p11(X) :- base(X). %* Multi line with constraint and fact inside
+:- base(X).
+test(1).
+%* test *%
+
+Resultado - Passa com answer set = {test(1)}.
+
+-------------------------------------------------------------
+
+p11(X) :- base(X). %* Multi line with constraint and fact inside
+:- base(X).
+test(1).
+ *%
+
+Resultado - Clingo WASM Error: -:3:2-3: error: syntax error, unexpected *
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,3 @@
-const { use } = require('chai');
 const { loadParser } = require('../parser/parser-wrapper.cjs');
 
 const MAC_OS = 1;
@@ -28,6 +27,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	let predicateErrors;
 	let commentWarnings;
 	let hover;
+	let unsafeVariables;
 
 	if (disableFeatures) {
 		syntax = disableFeatures.syntaxChecking;
@@ -35,6 +35,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		predicateErrors = disableFeatures.predicateErrors;
 		commentWarnings = disableFeatures.commentWarnings;
 		hover = disableFeatures.hoverPredicates;
+		unsafeVariables = disableFeatures.unsafeVariables;
 	}
 	else{
 		commentWarnings = "true";
@@ -46,6 +47,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	const parser = await loadParser();
 	const parserResult = parser.parse(textRaw);
 	const lineRanges = parserResult.lineRanges;
+	const hasUnclosedComment = parserResult.hasUnclosedComment;
 
 	const extraParserResults = [];
 	const extraDefinedPredicates = [];
@@ -60,28 +62,6 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 	
-	// Unsafe Variables
-
-	let unsafeVariablesErrorRanges = [];
-	let unsafeVariablesMessages = [];
-
-	parserResult.unsafeVariables.forEach(unsafeError => {
-		const range = {
-			lineStart: unsafeError.lineStart - 1,
-			lineEnd: unsafeError.lineEnd - 1,
-			indexStart: unsafeError.indexStart,
-			indexEnd: unsafeError.indexEnd
-		};
-
-		const errorMessage = `Unsafe Variables: ${unsafeError.unsafeVariables.join(", ")}`;
-
-		unsafeVariablesErrorRanges.push(range)
-		unsafeVariablesMessages.push(errorMessage)
-	});
-
-/* 	console.log("unsafeVariablesRanges: ")
-	console.log(unsafeVariablesErrorRanges) */
-
 	// Syntax Errors
 
 	let syntaxErrorRanges = [];
@@ -114,8 +94,27 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		});
 	}
 
-/* 	console.log("syntaxErrorRanges:")
-	console.log(syntaxErrorRanges) */
+	// Unsafe Variables
+
+	let unsafeVariablesErrorRanges = [];
+	let unsafeVariablesMessages = [];
+
+	if(unsafeVariables != "true") {
+		parserResult.unsafeVariables.forEach(unsafeError => {
+			const range = {
+				lineStart: unsafeError.lineStart - 1,
+				lineEnd: unsafeError.lineEnd - 1,
+				indexStart: unsafeError.indexStart,
+				indexEnd: unsafeError.indexEnd
+			};
+
+			if(!containsSyntaxErrorInLocation(range)) {
+				const errorMessage = `Unsafe Variables: ${unsafeError.unsafeVariables.join(", ")}`;	
+				unsafeVariablesErrorRanges.push(range)
+				unsafeVariablesMessages.push(errorMessage)
+			}
+		});
+	}
 
 	// Ordering Errors
 
@@ -129,7 +128,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 
 	if (orderErrors != "true") {
 
-		// Check if the program has a generator (choice rule)
+		// Check if the program has a generator (choice rule or fact with a choice)
 		let hasGenerator = parserResult.hasGenerator;
 
 		if(!hasGenerator && extraTextExists) {
@@ -156,7 +155,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				continue;
 			}
 
-			let generatorWarningMessage = "Warning: The program does not have a generator (Choice rule). Consider adding one after Facts and before Definite Rules";;
+			let generatorWarningMessage = "Warning: The program does not have a generator. Consider adding a Choice Rule or a Fact with a choice in its head";;
 	
 			if (currentIndex < lastSeenIndex) {
 				orderingWarningRanges.push({
@@ -172,19 +171,19 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						warningMessage = 'Warning: Constants must be at the beginning of the program.';
 						break;
 					case 'Fact':
-						warningMessage = 'Warning: Facts must be at the beginning, or between Constants and Choice Rules.';
+						warningMessage = 'Warning: Facts must be at the beginning or between Constants and Choice Rules.';
 						break;
 					case 'ChoiceRule':
-						warningMessage = 'Warning: Choice Rules must be at the beginning, or between Facts and Definition Rules.';
+						warningMessage = 'Warning: Choice Rules must be at the beginning or between Facts and Definite Rules.';
 						break;
 					case 'DefiniteRule':
-						warningMessage = 'Warning: Definition Rules must be between Choice Rules and Constraints.';
+						warningMessage = 'Warning: Definite Rules must be between Choice Rules and Constraints.';
 						break;
 					case 'Constraint':
-						warningMessage = 'Warning: Constraints must be between Definition Rules and either Optimization or Show Statements.';
+						warningMessage = 'Warning: Constraints must be at the end of the program or between Definite Rules and either Weak Constraints, Optimization Statements or Show Statements.';
 						break;
 					case 'Optimization':
-						warningMessage = 'Warning: Optimization statements must appear after Constraints and before Show Statements.';
+						warningMessage = 'Warning: Optimization Statements and Weak Constraints must appear after Constraints and before Show Statements.';
 						break;
 					case 'Show':
 						warningMessage = 'Warning: Show Statements must appear at the end of the program.';
@@ -266,7 +265,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						indexEnd: position.indexEnd + 1
 					}
 
-					if(!containsSyntaxErrorInLocation(range)) {
+					if(!containsSyntaxErrorInLocation(range) && !containsUnsafeVariableErrorInLocation(range)) {
 						stratificationErrorRanges.push(range);
 						stratificationErrorMessages.push(`Error: Predicate ${usedPredicateKey} is never defined.`);
 					}
@@ -291,7 +290,7 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 						indexEnd: usedPosition.indexEnd + 1
 					};
 
-					if(!containsSyntaxErrorInLocation(range) && !containsStratificationErrorInLocation(range)) {
+					if(!containsSyntaxErrorInLocation(range) && !containsUnsafeVariableErrorInLocation(range) && !containsStratificationErrorInLocation(range)) {
 						stratificationWarningRanges.push(range);
 						stratificationWarningMessages.push(`Warning: Predicate ${usedPredicateKey} is used before it is defined.`);
 					}
@@ -415,14 +414,14 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		const uniqueLineStarts = [...new Set(lines.map(line => line.lineStart))]; // Remove duplicates
 		if(!extraTextExists) {
 			if(uniqueLineStarts.length > 1)
-				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (lines ${uniqueLineStarts.join(',')}).`);
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (lines ${uniqueLineStarts.join(', ')}).`);
 			else
-				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (line ${uniqueLineStarts.join(',')}).`);
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (line ${uniqueLineStarts.join(', ')}).`);
 		} else {
 			if(uniqueLineStarts.length > 1)
-				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentFileName} lines ${uniqueLineStarts.join(',')}).`);
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentFileName} lines ${uniqueLineStarts.join(', ')}).`);
 			else 
-				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentFileName} line ${uniqueLineStarts.join(',')}).`);
+				definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentFileName} line ${uniqueLineStarts.join(', ')}).`);
 		}
 	}
 
@@ -462,9 +461,9 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 				}
 				const uniqueLines = [...new Set(lines)]; // Remove duplicates
 				if(uniqueLines.length > 1)
-					definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentExtraFileName} lines ${uniqueLines.join(',')}).`);
+					definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentExtraFileName} lines ${uniqueLines.join(', ')}).`);
 				else 
-					definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentExtraFileName} line ${uniqueLines.join(',')}).`);
+					definitionMessages.get(predicateKey).push(`No comment found where predicate ${predicateKey} is defined (${currentExtraFileName} line ${uniqueLines.join(', ')}).`);
 			}
 		});
 	}
@@ -536,9 +535,40 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	}
 
 	function containsSyntaxErrorInLocation(location) {
+		// We utilize an extended location to ensure that only ranges that have atleast one character between them are considered as non-overlapping
+		// This way we eliminate cases where two issues connect their underlines, making it look like a single issue
+		const extendedLocation = {
+			lineStart: location.lineStart,
+			lineEnd: location.lineEnd,
+			indexStart: location.indexStart > 0 ? location.indexStart - 1 : 0,
+			indexEnd: location.indexEnd + 1
+		}
+
 		if (syntax != "true") {
 			if (syntaxErrorRanges.some(range => {
-				if (doRangesOverlap(range, location)) {
+				if (doRangesOverlap(range, extendedLocation)) {
+					return true;
+				}
+				return false;
+			})) return true;
+		}
+
+		return false;
+	}
+
+	function containsUnsafeVariableErrorInLocation(location) {
+		// We utilize an extended location to ensure that only ranges that have atleast one character between them are considered as non-overlapping
+		// This way we eliminate cases where two issues connect their underlines, making it look like a single issue
+		const extendedLocation = {
+			lineStart: location.lineStart,
+			lineEnd: location.lineEnd,
+			indexStart: location.indexStart > 0 ? location.indexStart - 1 : 0,
+			indexEnd: location.indexEnd + 1
+		}
+
+		if(unsafeVariables != "true") {
+			if (unsafeVariablesErrorRanges.some(range => {
+				if (doRangesOverlap(range, extendedLocation)) {
 					return true;
 				}
 				return false;
@@ -549,9 +579,18 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	}
 
 	function containsStratificationErrorInLocation(location) {
+		// We utilize an extended location to ensure that only ranges that have atleast one character between them are considered as non-overlapping
+		// This way we eliminate cases where two issues connect their underlines, making it look like a single issue
+		const extendedLocation = {
+			lineStart: location.lineStart,
+			lineEnd: location.lineEnd,
+			indexStart: location.indexStart > 0 ? location.indexStart - 1 : 0,
+			indexEnd: location.indexEnd + 1
+		}
+
 		if (predicateErrors != "true") {
 			if (stratificationErrorRanges.some(range => {
-				if (doRangesOverlap(range, location)) {
+				if (doRangesOverlap(range, extendedLocation)) {
 					return true;
 				}
 				return false;
@@ -562,9 +601,18 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 	}
 
 	function containsStratificationWarningInLocation(location) {
+		// We utilize an extended location to ensure that only ranges that have atleast one character between them are considered as non-overlapping
+		// This way we eliminate cases where two issues connect their underlines, making it look like a single issue
+		const extendedLocation = {
+			lineStart: location.lineStart,
+			lineEnd: location.lineEnd,
+			indexStart: location.indexStart > 0 ? location.indexStart - 1 : 0,
+			indexEnd: location.indexEnd + 1
+		}
+
 		if (predicateErrors != "true") {
 			if (stratificationWarningRanges.some(range => {
-				if (doRangesOverlap(range, location)) {
+				if (doRangesOverlap(range, extendedLocation)) {
 					return true;
 				}
 				return false;
@@ -574,9 +622,9 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		return false;
 	}
 
-
 	function containsNonFullLineIssueInLocation(location) {
 		return containsSyntaxErrorInLocation(location) ||
+			containsUnsafeVariableErrorInLocation(location) ||
 			containsStratificationErrorInLocation(location) ||
 			containsStratificationWarningInLocation(location);
 	}
@@ -756,20 +804,26 @@ async function loadErrors(textRaw, fileName, extraTextRaw, disableFeatures) {
 		}
 	}
 
-	return [syntaxErrorRanges, 
-		stratificationErrorRanges, 
-		finalFullLineWarningRanges, 
-		stratificationWarningRanges,
-		syntaxErrorMessages, 
-		stratificationErrorMessages, 
-		finalFullLineWarningMessages, 
-		stratificationWarningMessages,
-		predicateHoverRanges, predicateHoverMessages,
-		definedPredicates, usedPredicates, 
-		constructTypes,
-		unsafeVariablesErrorRanges,
-		unsafeVariablesMessages
-	 ];
+	return {
+		syntaxErrorRanges: syntaxErrorRanges,
+		unsafeVariablesErrorRanges: unsafeVariablesErrorRanges,
+		stratificationErrorRanges: stratificationErrorRanges, 
+		fullLineWarningRanges: finalFullLineWarningRanges, 
+		stratificationWarningRanges: stratificationWarningRanges,
+		predicateHoverRanges: predicateHoverRanges, 
+
+		syntaxErrorMessages: syntaxErrorMessages, 
+		unsafeVariablesMessages: unsafeVariablesMessages,
+		stratificationErrorMessages: stratificationErrorMessages, 
+		fullLineWarningMessages: finalFullLineWarningMessages, 
+		stratificationWarningMessages: stratificationWarningMessages,
+		predicateHoverMessages: predicateHoverMessages,
+
+		definedPredicates: definedPredicates, 
+		usedPredicates: usedPredicates, 
+		constructTypes: constructTypes,
+		hasUnclosedComment: hasUnclosedComment
+	};
 
 	
 }
