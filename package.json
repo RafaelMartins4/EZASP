@@ -1,8 +1,8 @@
 {
-  "name": "ezasp",
-  "displayName": "EZASP",
+  "name": "ezasp-test-version",
+  "displayName": "EZASP (Testing Version)",
   "description": "Making Learning Answer Set Programming Easier",
-  "version": "(Testing Version)",
+  "version": "1.0.0",
   "publisher": "RafaelMartins",
   "engines": {
     "vscode": "^1.80.0"

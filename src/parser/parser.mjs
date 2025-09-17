@@ -458,7 +458,6 @@ class VerboseASPListener extends ASPListener {
         // As a result, if a variable is not used in the body of the rule, it will not be grounded even if it appears in the body of the choice.
         let headGroundedVariables = new Set();
 
-
         let contextVariables = [];
         let groundedContextVariables = [];
         let linkedContextVariables = [];
@@ -1693,7 +1692,7 @@ class VerboseASPListener extends ASPListener {
     }
 
     collectVariablesFromTerm(term) {
-        if(!term) return {allVars: new Set(), groundableVars: new Set(), skip: false, hasNonVarOrInt: false};
+        if(!term || term.getText() == '') return {allVars: new Set(), groundableVars: new Set(), skip: false, hasNonVarOrInt: false};
 
         let allVars = [];
 
@@ -1716,35 +1715,39 @@ class VerboseASPListener extends ASPListener {
 
                 multiplicativeTerms.forEach(multiplicativeTerm => {
                     const powerTerms = multiplicativeTerm.powerTerm();
-                    if(powerTerms.length > 1) {
-                        const hasDivision = multiplicativeTerm.DIVISION().length > 0;
-                        const hasModulo = multiplicativeTerm.MODULO().length > 0;
-                        const hasAnd = multiplicativeTerm.AND().length > 0;
+                    if(powerTerms) {
+                        if(powerTerms.length > 1) {
+                            const hasDivision = multiplicativeTerm.DIVISION().length > 0;
+                            const hasModulo = multiplicativeTerm.MODULO().length > 0;
+                            const hasAnd = multiplicativeTerm.AND().length > 0;
 
-                        if(hasDivision || hasModulo || hasAnd) {
-                            hasNonGroundableOperator = true;
-                        }
-                    }
-
-                    powerTerms.forEach(powerTerm => {
-                        const unaryTerms = powerTerm.unaryTerm();
-
-                        if(unaryTerms.length > 1) {
-                            hasNonGroundableOperator = true;
-                        }
-                        unaryTerms.forEach(unaryTerm => {
-                            const result = this.collectVariablesFromUnaryTerm(unaryTerm);
-                            result.allVars.forEach(v => allVars.push(v));
-
-                            if(result.hasNonGroundableOperator)
-                                hasNonGroundableOperator = true
-                            if(!result.isVarOrInt) {
-                                hasNonVarOrInt = true;
+                            if(hasDivision || hasModulo || hasAnd) {
+                                hasNonGroundableOperator = true;
                             }
-                            if(result.skip)
-                                skip = true;
+                        }
+
+                        powerTerms.forEach(powerTerm => {
+                            const unaryTerms = powerTerm.unaryTerm();
+
+                            if(unaryTerms) {
+                                if(unaryTerms.length > 1) {
+                                    hasNonGroundableOperator = true;
+                                }
+                                unaryTerms.forEach(unaryTerm => {
+                                    const result = this.collectVariablesFromUnaryTerm(unaryTerm);
+                                    result.allVars.forEach(v => allVars.push(v));
+
+                                    if(result.hasNonGroundableOperator)
+                                        hasNonGroundableOperator = true
+                                    if(!result.isVarOrInt) {
+                                        hasNonVarOrInt = true;
+                                    }
+                                    if(result.skip)
+                                        skip = true;
+                                });
+                            }
                         });
-                    });
+                    }
                 });
             }
 
@@ -2196,8 +2199,6 @@ export function parse(input) {
         const lineRanges = listener.getLineRanges();
         const unsafeVariables = listener.getUnsafeVariables();
 
-        console.log(constructTypes)
-        console.log(statementsByLine)
         return {syntaxErrors: [...parserSyntaxErrors, ...listenerSyntaxErrors], tokenErrors, constructTypes, definedPredicates, usedPredicates, statementsByLine, lineRanges, unsafeVariables, 
             hasGenerator, hasUnclosedComment};
 

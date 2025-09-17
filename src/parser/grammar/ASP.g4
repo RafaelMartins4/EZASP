@@ -68,14 +68,20 @@ atom: CONSTANT ('(' (term (',' term)*)? ')')?;
 builtIn_atom: term (COMPARATOR | EQ | EQEQ) term;
 
 aggregate_atom_head:
-       AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}' ((COMPARATOR | EQ | EQEQ) term)?
-       | (term (COMPARATOR | EQ | EQEQ))? AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}';
+       AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}' (COMPARATOR | EQ | EQEQ) term
+       | AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}'
+       | term (COMPARATOR | EQ | EQEQ) AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}'
+       | AGGREGATE_FUNCTION '{' (aggregate_element_head (';' aggregate_element_head)*)? '}';
+
 
 aggregate_element_head: term (',' term)* ':' aggregate_literal;   // Separating aggregate elements because clingo accepts slightly different aggregates depending if it's placed on head or body
 
 aggregate_atom_body: 
-       AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' ((COMPARATOR | EQ | EQEQ) term)?
-       | (term (COMPARATOR | EQ | EQEQ))? AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' ;
+       AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' (COMPARATOR | EQ | EQEQ) term
+       | AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}'
+       | term (COMPARATOR | EQ | EQEQ) AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}'
+       | AGGREGATE_FUNCTION '{' (aggregate_element_body (';' aggregate_element_body)*)? '}' ;
+
 
 aggregate_element_body: (term (',' term)*)? (':' (aggregate_literal (',' aggregate_literal)*)?)?;
 
