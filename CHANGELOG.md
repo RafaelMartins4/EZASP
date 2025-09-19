@@ -3,7 +3,7 @@
 All notable changes to the "ezasp" extension will be documented in this file.
 
 ## 1.0.0
-Inicial release with:
+Initial release with:
 - Syntax checking;
 - Warnings about order of rules errors;
 - Predicate validation;

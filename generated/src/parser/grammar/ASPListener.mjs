@@ -464,6 +464,15 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by ASPParser#interval.
+	enterInterval(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#interval.
+	exitInterval(ctx) {
+	}
+
+
 	// Enter a parse tree produced by ASPParser#weight.
 	enterWeight(ctx) {
 	}
@@ -479,24 +488,6 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ASPParser#priority.
 	exitPriority(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#lowerbound.
-	enterLowerbound(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#lowerbound.
-	exitLowerbound(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#upperbound.
-	enterUpperbound(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#upperbound.
-	exitUpperbound(ctx) {
 	}
 
 

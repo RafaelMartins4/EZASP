@@ -14,7 +14,7 @@ fact:
 choice_rule:
        choice ':-' body DOT;
 
-choice: (lowerbound)? '{' (choice_element (';' choice_element)*)? '}' (upperbound)?;
+choice: (term)? '{' (choice_element (';' choice_element)*)? '}' (term)?;
 
 choice_element: choiceHead_atoms (':' (choiceBody_atoms (',' choiceBody_atoms)* )? )?;
 
@@ -116,11 +116,10 @@ constant_unaryTerm: integer | CONSTANT | STRING | SUP | INF | constant_functionT
 constant_functionTerm: CONSTANT '(' (constant_term (',' constant_term)*)? ')';
 constant_tuple: '(' (constant_term (',' constant_term)* )? ')';
 
-integer: NUMBER | INTERVAL;
+integer: interval | NUMBER;
+interval: (NUMBER | CONSTANT | VARIABLE) '..' (NUMBER | CONSTANT | VARIABLE);
 weight: integer;
 priority: integer;
-lowerbound: integer;
-upperbound: integer;
 
 // Tokens
 NOT: 'not';                      // ensures that 'not' is treated as a standalone word
@@ -135,7 +134,6 @@ UNDERSCORE: '_';
 SUP: '#sup';
 INF: '#inf';
 NUMBER: ('0' | [1-9][0-9]*);
-INTERVAL: (NUMBER '..' NUMBER);
 STRING: '"' (~('"' | '\n' | '\r'))* '"';
 EQ: '=';      // we separated both equality signs from the rest of the comparators to ensure that the program accepts both types of equality
 EQEQ: '==';   // without this separation there seemed to be some ambiguity and the parser could not decide between accepting the '=' operator or looking ahead in hopes of finding a '==' operator.
