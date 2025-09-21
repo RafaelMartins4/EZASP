@@ -677,21 +677,6 @@ class VerboseASPListener extends ASPListener {
                         const aggregate_atom = body_atom.aggregate_atom_body();
                         const term = aggregate_atom.term();
                         if(term) {
-                            const termResult = this.collectVariablesFromTerm(term);
-
-                            if(termResult.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors.
-                            } else {
-                                termResult.allVars.forEach(v => {
-                                    totalVariables.add(v);
-                                    if(headGroundedVariables.has(v)) {
-                                        groundedVariables.add(v);
-                                    }
-                                });
-                            }
-
                             // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
                             // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
                             let aggregateVariables = new Set();
@@ -706,6 +691,36 @@ class VerboseASPListener extends ASPListener {
                             contextVariables.push(aggregateVariables);
                             groundedContextVariables.push(aggregateGroundedVariables);
                             linkedContextVariables.push(aggregateLinkedVariables);
+
+                            // A special case seems to happen in aggregate atoms in the body. If the aggregate has an equality comparison ('=' or '==') then it is possible for the 
+                            // comparison term to be grounded. However, it only happens if the variables inside the comparison term are not used inside the aggregate itself
+                            // For example: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=N.     Here, N is grounded because it is used in an equality comparison, and not used inside the aggregate
+                            // If we change it to: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Y).     Then N is not grounded (nor is Y).
+                            // {q(N,Z)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Z).     It can even ground multiple variables, as long as NONE appear inside the aggregate
+
+                            const hasEquality = aggregate_atom.EQ() !== null || aggregate_atom.EQEQ() !== null;
+                            const termResult = this.collectVariablesFromTerm(term);
+
+                            if(termResult.skip) {
+                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                // As a result, we will simply skip these cases and not throw any errors.
+                            } else {
+                                // If NONE of the variables in the term appear inside the aggregate and has an equality constraint
+                                if([...termResult.allVars].every(v => !aggregateVariables.has(v)) && hasEquality) {
+                                    termResult.allVars.forEach(v => {
+                                        totalVariables.add(v)
+                                        groundedVariables.add(v)
+                                    })
+                                } else {
+                                    termResult.allVars.forEach(v => {
+                                        totalVariables.add(v);
+                                        if(headGroundedVariables.has(v)) {
+                                            groundedVariables.add(v);
+                                        }
+                                    });
+                                }
+                            }
                         }
                     }
                 });
@@ -849,16 +864,6 @@ class VerboseASPListener extends ASPListener {
                         const aggregate_atom = body_atom.aggregate_atom_body();
                         const term = aggregate_atom.term();
                         if(term) {
-                            const termResult = this.collectVariablesFromTerm(term);
-                            if(termResult.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors.
-                            } else {
-                                termResult.allVars.forEach(v => totalVariables.add(v));
-                            }
-                            
-
                             // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
                             // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
                             let aggregateVariables = new Set();
@@ -873,6 +878,31 @@ class VerboseASPListener extends ASPListener {
                             contextVariables.push(aggregateVariables);
                             groundedContextVariables.push(aggregateGroundedVariables);
                             linkedContextVariables.push(aggregateLinkedVariables);
+
+                            // A special case seems to happen in aggregate atoms in the body. If the aggregate has an equality comparison ('=' or '==') then it is possible for the 
+                            // comparison term to be grounded. However, it only happens if the variables inside the comparison term are not used inside the aggregate itself
+                            // For example: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=N.     Here, N is grounded because it is used in an equality comparison, and not used inside the aggregate
+                            // If we change it to: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Y).     Then N is not grounded (nor is Y).
+                            // {q(N,Z)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Z).     It can even ground multiple variables, as long as NONE appear inside the aggregate
+
+                            const hasEquality = aggregate_atom.EQ() !== null || aggregate_atom.EQEQ() !== null;
+                            const termResult = this.collectVariablesFromTerm(term);
+
+                            if(termResult.skip) {
+                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                // As a result, we will simply skip these cases and not throw any errors.
+                            } else {
+                                // If NONE of the variables in the term appear inside the aggregate and has an equality constraint
+                                if([...termResult.allVars].every(v => !aggregateVariables.has(v)) && hasEquality) {
+                                    termResult.allVars.forEach(v => {
+                                        totalVariables.add(v)
+                                        groundedVariables.add(v)
+                                    })
+                                } else {
+                                    termResult.allVars.forEach(v => totalVariables.add(v));
+                                }
+                            }
                         }
                     }
                 });
@@ -951,17 +981,7 @@ class VerboseASPListener extends ASPListener {
                     } else if(body_atom.aggregate_atom_body()) {
                         const aggregate_atom = body_atom.aggregate_atom_body();
                         const term = aggregate_atom.term();
-                        if(term) {
-                            const termResult = this.collectVariablesFromTerm(term);
-                            if(termResult.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors.
-                            } else {
-                                termResult.allVars.forEach(v => totalVariables.add(v));
-                            }
-                            
-
+                        if(term) {                            
                             // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
                             // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
                             let aggregateVariables = new Set();
@@ -976,6 +996,31 @@ class VerboseASPListener extends ASPListener {
                             contextVariables.push(aggregateVariables);
                             groundedContextVariables.push(aggregateGroundedVariables);
                             linkedContextVariables.push(aggregateLinkedVariables);
+
+                            // A special case seems to happen in aggregate atoms in the body. If the aggregate has an equality comparison ('=' or '==') then it is possible for the 
+                            // comparison term to be grounded. However, it only happens if the variables inside the comparison term are not used inside the aggregate itself
+                            // For example: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=N.     Here, N is grounded because it is used in an equality comparison, and not used inside the aggregate
+                            // If we change it to: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Y).     Then N is not grounded (nor is Y).
+                            // {q(N,Z)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Z).     It can even ground multiple variables, as long as NONE appear inside the aggregate
+
+                            const hasEquality = aggregate_atom.EQ() !== null || aggregate_atom.EQEQ() !== null;
+                            const termResult = this.collectVariablesFromTerm(term);
+
+                            if(termResult.skip) {
+                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                // As a result, we will simply skip these cases and not throw any errors.
+                            } else {
+                                // If NONE of the variables in the term appear inside the aggregate and has an equality constraint
+                                if([...termResult.allVars].every(v => !aggregateVariables.has(v)) && hasEquality) {
+                                    termResult.allVars.forEach(v => {
+                                        totalVariables.add(v)
+                                        groundedVariables.add(v)
+                                    })
+                                } else {
+                                    termResult.allVars.forEach(v => totalVariables.add(v));
+                                }
+                            }
                         }
                     }
                 });
@@ -1166,16 +1211,6 @@ class VerboseASPListener extends ASPListener {
                         const aggregate_atom = body_atom.aggregate_atom_body();
                         const term = aggregate_atom.term();
                         if(term) {
-                            const termResult = this.collectVariablesFromTerm(term);
-                            if(termResult.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors. 
-                            } else {
-                                termResult.allVars.forEach(v => totalVariables.add(v));
-                            }
-                            
-
                             // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
                             // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
                             let aggregateVariables = new Set();
@@ -1190,6 +1225,31 @@ class VerboseASPListener extends ASPListener {
                             contextVariables.push(aggregateVariables);
                             groundedContextVariables.push(aggregateGroundedVariables);
                             linkedContextVariables.push(aggregateLinkedVariables);
+
+                            // A special case seems to happen in aggregate atoms in the body. If the aggregate has an equality comparison ('=' or '==') then it is possible for the 
+                            // comparison term to be grounded. However, it only happens if the variables inside the comparison term are not used inside the aggregate itself
+                            // For example: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=N.     Here, N is grounded because it is used in an equality comparison, and not used inside the aggregate
+                            // If we change it to: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Y).     Then N is not grounded (nor is Y).
+                            // {q(N,Z)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Z).     It can even ground multiple variables, as long as NONE appear inside the aggregate
+
+                            const hasEquality = aggregate_atom.EQ() !== null || aggregate_atom.EQEQ() !== null;
+                            const termResult = this.collectVariablesFromTerm(term);
+
+                            if(termResult.skip) {
+                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                // As a result, we will simply skip these cases and not throw any errors.
+                            } else {
+                                // If NONE of the variables in the term appear inside the aggregate and has an equality constraint
+                                if([...termResult.allVars].every(v => !aggregateVariables.has(v)) && hasEquality) {
+                                    termResult.allVars.forEach(v => {
+                                        totalVariables.add(v)
+                                        groundedVariables.add(v)
+                                    })
+                                } else {
+                                    termResult.allVars.forEach(v => totalVariables.add(v));
+                                }
+                            }
                         }
                     }
                 })
@@ -1314,16 +1374,7 @@ class VerboseASPListener extends ASPListener {
                         } else if(body_atom.aggregate_atom_body()) {
                             const aggregate_atom = body_atom.aggregate_atom_body();
                             const term = aggregate_atom.term();
-                            if(term) {
-                                const termResult = this.collectVariablesFromTerm(term);
-                                if(termResult.skip) {
-                                    // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                    // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                    // As a result, we will simply skip these cases and not throw any errors.
-                                } else {
-                                    termResult.allVars.forEach(v => totalVariables.add(v));
-                                }
-                                
+                            if(term) {                                
                                 // Clingo only considers aggregate atoms' variables if there is a term of comparison in the aggregate
                                 // As a result, if there is no term, we do not need to consider the variables inside the aggregate for unsafety
                                 let aggregateVariables = new Set();
@@ -1338,6 +1389,31 @@ class VerboseASPListener extends ASPListener {
                                 contextVariables.push(aggregateVariables);
                                 groundedContextVariables.push(aggregateGroundedVariables);
                                 linkedContextVariables.push(aggregateLinkedVariables);
+
+                                // A special case seems to happen in aggregate atoms in the body. If the aggregate has an equality comparison ('=' or '==') then it is possible for the 
+                                // comparison term to be grounded. However, it only happens if the variables inside the comparison term are not used inside the aggregate itself
+                                // For example: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=N.     Here, N is grounded because it is used in an equality comparison, and not used inside the aggregate
+                                // If we change it to: {q(N)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Y).     Then N is not grounded (nor is Y).
+                                // {q(N,Z)} :- #count{V,X,Y: term(V,X,Y)}=q(N,Z).     It can even ground multiple variables, as long as NONE appear inside the aggregate
+
+                                const hasEquality = aggregate_atom.EQ() !== null || aggregate_atom.EQEQ() !== null;
+                                const termResult = this.collectVariablesFromTerm(term);
+
+                                if(termResult.skip) {
+                                    // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                    // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                    // As a result, we will simply skip these cases and not throw any errors.
+                                } else {
+                                    // If NONE of the variables in the term appear inside the aggregate and has an equality constraint
+                                    if([...termResult.allVars].every(v => !aggregateVariables.has(v)) && hasEquality) {
+                                        termResult.allVars.forEach(v => {
+                                            totalVariables.add(v)
+                                            groundedVariables.add(v)
+                                        })
+                                    } else {
+                                        termResult.allVars.forEach(v => totalVariables.add(v));
+                                    }
+                                }
                             }
                         }
                     })

@@ -90,7 +90,7 @@ aggregate_element_optimization: term (',' term)* (':' (aggregate_literal (',' ag
 aggregate_literal: literal | NOT? builtIn_atom;
 
 // Terms
-term: additiveTerm;
+term: ('|' additiveTerm '|') | additiveTerm;
 
 additiveTerm: CLASSICAL_NEGATION? multiplicativeTerm ((ADDITION | CLASSICAL_NEGATION | OR | EXCLUSIVE_OR) multiplicativeTerm)*;
 
