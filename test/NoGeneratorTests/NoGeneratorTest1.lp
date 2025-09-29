@@ -12,3 +12,9 @@ required_skill(task3, 3).
 
 % Define which workers can handle which task, along with their proficiency level with that skill
 qualification(W, T, P) :- worker(W), task(T), required_skill(T, S), skill(W, S, P).
+
+test :- worker(W), not assigned(W, T), task(T).
+
+
+
+

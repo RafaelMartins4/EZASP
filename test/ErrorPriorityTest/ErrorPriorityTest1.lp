@@ -13,26 +13,36 @@ q().
 % Only Syntax Error
 q(.
 
-% Syntax Error + Unsafe Variable
-q(X) : .    
 
-% Syntax Error + Stratification Error
-:- p(), .
 
-% Syntax Error + Stratification Error (with space between the two errors)
-:- p(),   .
 
 % Syntax Error + Stratification Warning
 :- b(), .
 
 :- b(),  .   % Syntax Error + Stratification Warning (with space between the two issues)
 
-:- q(Y), X != 2.   % Unsafe Variable Error + Stratification Warning
+% Stratification Error + Stratification Warning
+:- b(), test(). 
 
-q(X) :- test().  % Unsafe Variable + Stratification Error
+% Syntax Error + Stratification Error (with space between the two errors)
+:- p(),   .
 
-:- b(), test().  % Stratification Error + Stratification Warning
 
+% Syntax Error + Unsafe Variable
+q(X) : .    
+
+% Syntax Error + Stratification Error
+:- p(), .
+
+% Unsafe Variable + Stratification Error
+q(X) :- test().  
+
+% Unsafe Variable Error + Stratification Warning
+:- q(Y), X != 2.   
+
+
+
+% Defining b()
 b().
 
 q(.     % Syntax Error + Ordering Warning + No Comment Warning

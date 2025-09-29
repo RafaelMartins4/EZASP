@@ -17,19 +17,6 @@ p1(X) :- base(X).
 p2(X) :- p1(X), base(X).
 p3(X) :- p2(X).
 p4(X) :- p2(X), p3(X). 
-p13(X) :- p11(X), p12(X).
-p14(X) :- p12(X), p13(X). % what  
-p15(X) :- p13(X), p14(X). % testing 
-p5(X) :- p3(X), p4(X).
-p6(X) :- p4(X), p5(X).
-p7(X) :- p5(X), p6(X).
-p8(X) :- p6(X), p7(X).
-p9(X) :- p7(X), p8(X).  % test
-
-
-p10(X) :- p8(X), p9(X).
-p11(X) :- p9(X), p10(X).
-p12(X) :- p10(X), p11(X).
 
 %* test
 

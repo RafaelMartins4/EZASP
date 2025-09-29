@@ -358,7 +358,11 @@ class VerboseASPListener extends ASPListener {
                                             // that can be used in arithmetic operations.
                                             // As a result, we will simply skip these cases and not throw any errors.
                                         } else {
-                                            result.allVars.forEach(v => choiceVariables.add(v));
+                                            result.allVars.forEach(v => {
+                                                // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                                if(!v.startsWith('#Anon'))
+                                                    choiceVariables.add(v)
+                                            });
                                             if(!hasNot) {
                                                 result.groundableVars.forEach(v => choiceGroundedVariables.add(v));
                                             }
@@ -586,7 +590,11 @@ class VerboseASPListener extends ASPListener {
                                         // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                         // As a result, we will simply skip these cases and not throw any errors.
                                     } else {
-                                        result.allVars.forEach(v => choiceVariables.add(v));
+                                        result.allVars.forEach(v => {
+                                            // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                            if(!v.startsWith('#Anon'))
+                                                choiceVariables.add(v)
+                                        });
                                         if(!hasNot) {
                                             result.groundableVars.forEach(v => choiceGroundedVariables.add(v));
                                             if(!hasMultipleElements) {
@@ -650,7 +658,11 @@ class VerboseASPListener extends ASPListener {
                                     // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                     // As a result, we will simply skip these cases and not throw any errors.
                                 } else {
-                                    result.allVars.forEach(v => totalVariables.add(v));
+                                    result.allVars.forEach(v => {
+                                        // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                        if(!v.startsWith('#Anon'))
+                                            totalVariables.add(v)
+                                    });
                                     if(!hasNot) {
                                         result.groundableVars.forEach(v => groundedVariables.add(v));
                                     }
@@ -845,7 +857,11 @@ class VerboseASPListener extends ASPListener {
                                     // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                     // As a result, we will simply skip these cases and not throw any errors.
                                 } else {
-                                    result.allVars.forEach(v => totalVariables.add(v));
+                                    result.allVars.forEach(v => {
+                                        // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                        if(!v.startsWith('#Anon'))
+                                            totalVariables.add(v)
+                                    });
                                     if(!hasNot) {
                                         result.groundableVars.forEach(v => groundedVariables.add(v));
                                     }
@@ -963,7 +979,11 @@ class VerboseASPListener extends ASPListener {
                                     // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                     // As a result, we will simply skip these cases and not throw any errors.
                                 } else {
-                                    result.allVars.forEach(v => totalVariables.add(v));
+                                    result.allVars.forEach(v => {
+                                        // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                        if(!v.startsWith('#Anon'))
+                                            totalVariables.add(v)
+                                    });
                                     if(!hasNot) {
                                         result.groundableVars.forEach(v => groundedVariables.add(v));
                                     }
@@ -1095,7 +1115,11 @@ class VerboseASPListener extends ASPListener {
                                             // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                             // As a result, we will simply skip these cases and not throw any errors.
                                         } else {
-                                            result.allVars.forEach(v => bodyVariables.add(v));
+                                            result.allVars.forEach(v => {
+                                                // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                                if(!v.startsWith('#Anon'))
+                                                    bodyVariables.add(v)
+                                            });
                                             if(!hasNot) {
                                                 result.groundableVars.forEach(v => bodyGroundedVariables.add(v));
                                             }
@@ -1192,7 +1216,11 @@ class VerboseASPListener extends ASPListener {
                                     // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                     // As a result, we will simply skip these cases and not throw any errors.
                                 } else {
-                                    result.allVars.forEach(v => totalVariables.add(v));
+                                    result.allVars.forEach(v => {
+                                        // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                        if(!v.startsWith('#Anon'))
+                                            totalVariables.add(v)
+                                    });
                                     if(!hasNot) {
                                         result.groundableVars.forEach(v => groundedVariables.add(v));
                                     }
@@ -1356,7 +1384,11 @@ class VerboseASPListener extends ASPListener {
                                         // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                         // As a result, we will simply skip these cases and not throw any errors.
                                     } else {
-                                        result.allVars.forEach(v => totalVariables.add(v));
+                                        result.allVars.forEach(v => {
+                                            // Anonymous variables are not considered unsafe if used in a negative literal in the body of a rule
+                                            if(!v.startsWith('#Anon'))
+                                                totalVariables.add(v)
+                                        });
                                         if(!hasNot) {
                                             result.groundableVars.forEach(v => groundedVariables.add(v));
                                         }

@@ -32,9 +32,6 @@
 
 { q(X) : y(X) } :- #count{X,Y,Z : q()} > q(X).  % Y, Z unsafe
 
-% TODO: Testar este caso de novo quando os assignments forem retirados
-%{ q(X) : y(X) } :- #count{X,Y,Z : q()} = q(Y).  % X, Z unsafe
-
 { q(X) : y(X) } :- #count{X,Y,Z : q()} == q(Y).  % X, Y, Z unsafe
 
 { q(X) : y(X) } :- #count{X,Y,Z : q()} == q(Z).  % X, Y, Z unsafe
@@ -58,9 +55,6 @@
 { q(X) : y(X) } :- q(Y).    % Safe
 
 { q(X) : y(X); t(Y)} :- q(Y).  % Safe
-
-% Fix grammar to allow this atom
-%{ q(X) : y(X, Y) } :- #count{X,Y,Z} > q(X), Y != 2.
 
 { f(X,Y) : p(X), q(Y) } :- X == Y.  % Safe
 

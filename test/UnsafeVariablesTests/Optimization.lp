@@ -2,7 +2,7 @@
 
 #minimize {X,Y,Z}.  % X, Y, Z unsafe
 
-#minimize {X,Y,Z: q(X)}.    % Y, Z unsafe
+#minimize {X,Y,Z: q(X)}.  % Y, Z unsafe
 
 #minimize {X,Y,Z: q(X), q(Y)}.  % Z unsafe
 
