@@ -59,6 +59,24 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by ASPParser#comparatorTerm1.
+	enterComparatorTerm1(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#comparatorTerm1.
+	exitComparatorTerm1(ctx) {
+	}
+
+
+	// Enter a parse tree produced by ASPParser#comparatorTerm2.
+	enterComparatorTerm2(ctx) {
+	}
+
+	// Exit a parse tree produced by ASPParser#comparatorTerm2.
+	exitComparatorTerm2(ctx) {
+	}
+
+
 	// Enter a parse tree produced by ASPParser#choice_element.
 	enterChoice_element(ctx) {
 	}
@@ -146,15 +164,6 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ASPParser#optimization.
 	exitOptimization(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#optimizationBody.
-	enterOptimizationBody(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#optimizationBody.
-	exitOptimizationBody(ctx) {
 	}
 
 
@@ -470,24 +479,6 @@ export default class ASPListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by ASPParser#interval.
 	exitInterval(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#weight.
-	enterWeight(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#weight.
-	exitWeight(ctx) {
-	}
-
-
-	// Enter a parse tree produced by ASPParser#priority.
-	enterPriority(ctx) {
-	}
-
-	// Exit a parse tree produced by ASPParser#priority.
-	exitPriority(ctx) {
 	}
 
 

@@ -14,7 +14,10 @@ fact:
 choice_rule:
        choice ':-' body DOT;
 
-choice: (term)? '{' (choice_element (';' choice_element)*)? '}' (term)?;
+choice: (term | comparatorTerm1)? '{' (choice_element (';' choice_element)*)? '}' (comparatorTerm2 | term)?;
+
+comparatorTerm1: term (COMPARATOR | EQ | EQEQ);  // Used to be able to differentiate between both comparators used in choices. Useful for unsafe variable detection
+comparatorTerm2: (COMPARATOR | EQ | EQEQ) term;
 
 choice_element: choiceHead_atoms (':' (choiceBody_atoms (',' choiceBody_atoms)* )? )?;
 
@@ -38,14 +41,12 @@ body_atoms: literal | NOT? builtIn_atom | NOT? aggregate_atom_body | NOT? choice
 
 // Optimization statements
 optimization: 
-       '#minimize' '{' (optimizationBody (';' optimizationBody)*)? '}' DOT
-       | '#maximize' '{' (optimizationBody (';' optimizationBody)*)? '}' DOT;
-
-optimizationBody: (weight '@' priority ',')? aggregate_element_optimization;
+       '#minimize' '{' (aggregate_element_optimization (';' aggregate_element_optimization)*)? '}' DOT
+       | '#maximize' '{' (aggregate_element_optimization (';' aggregate_element_optimization)*)? '}' DOT;
 
 // Weak Constraint
 weak_constraint: 
-       ':~' body '.' '[' (weight '@' priority ',')? ((CLASSICAL_NEGATION)? term (',' (CLASSICAL_NEGATION)? term)*) EOWC;
+       ':~' body '.' '[' (((term '@' term) (',' term)*) | (term (',' term)*)) EOWC;
 
 show:
        (show_atoms DOT)
@@ -63,7 +64,7 @@ line_comment: LINE_COMMENT;
 
 literal: NOT? classical_atom;
 classical_atom: CLASSICAL_NEGATION? atom;
-atom: CONSTANT ('(' (term (',' term)*)? ')')?;
+atom: CONSTANT ('(' (term (',' term)*)? (';' (term (',' term)*)? )* ')')?;
 
 builtIn_atom: term (COMPARATOR | EQ | EQEQ) term;
 
@@ -85,7 +86,7 @@ aggregate_atom_body:
 
 aggregate_element_body: (term (',' term)*)? (':' (aggregate_literal (',' aggregate_literal)*)?)?;
 
-aggregate_element_optimization: term (',' term)* (':' (aggregate_literal (',' aggregate_literal)*)?)?;
+aggregate_element_optimization: ( ((term '@' term) (',' term)*) | (term (',' term)*) ) (':' (aggregate_literal (',' aggregate_literal)*)?)?;
 
 aggregate_literal: literal | NOT? builtIn_atom;
 
@@ -100,7 +101,7 @@ powerTerm: unaryTerm (EXPONENTIATION unaryTerm)*;
 
 unaryTerm: simpleTerm | functionTerm | tuple | '(' term ')';
 simpleTerm: integer | CONSTANT | STRING | VARIABLE | UNDERSCORE | SUP | INF;
-functionTerm: CONSTANT '(' (term (',' term)*)? ')';
+functionTerm: CONSTANT ('(' (term (',' term)*)? (';' (term (',' term)*)? )* ')')?;
 tuple: '(' term ',' term (',' term)* ')';
 
 // Constant rules utilize slightly different terms
@@ -118,8 +119,6 @@ constant_tuple: '(' (constant_term (',' constant_term)* )? ')';
 
 integer: interval | NUMBER;
 interval: (NUMBER | CONSTANT | VARIABLE) '..' (NUMBER | CONSTANT | VARIABLE);
-weight: integer;
-priority: integer;
 
 // Tokens
 NOT: 'not';                      // ensures that 'not' is treated as a standalone word
