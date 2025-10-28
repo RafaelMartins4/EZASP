@@ -128,7 +128,7 @@ LINE_COMMENT: '%' ~[*\r\n] ~[\r\n]* [\r\n]?;
 DOT: '.';
 EOWC: ']';           // End of weak constraint
 CONSTANT: (UNDERSCORE)*[a-z][a-zA-Z0-9_]*;
-VARIABLE: (UNDERSCORE)*[A-Z][a-zA-Z0-9_]*;
+VARIABLE: (UNDERSCORE)*[A-Z][a-zA-Z0-9_]*; 
 UNDERSCORE: '_';
 SUP: '#sup';
 INF: '#inf';
@@ -147,4 +147,5 @@ DIVISION: '/';
 MODULO: '\\';
 AND: '&';
 EXPONENTIATION: '**';
+EXTERNAL_FUNCTION: '@' [a-zA-Z_][a-zA-Z_0-9]* '(' .*? ')' -> skip;
 WS: [ \t\r\n]+ -> skip;

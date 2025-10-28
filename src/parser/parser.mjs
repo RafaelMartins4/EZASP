@@ -320,7 +320,7 @@ class VerboseASPListener extends ASPListener {
                         let argsText;
                         if(atomText.indexOf('(') != -1) {
                             hasArgs = true;
-                            argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                            argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                         }
                         const terms = atom.term();
 
@@ -334,14 +334,53 @@ class VerboseASPListener extends ASPListener {
                         }
 
                         if(hasArgs) {
-                            const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                            argsArities.forEach(arity => {
-                                const predicateKey = `${predicateName}/${arity}`;
+                            const arities = new Set();
+                            let nest = 0;
+                            let arity = 0;
+                            let hasToken = false;
+                            let lastNonWS = '';
+
+                            for (let i = 0; i < argsText.length; i++) {
+                                const ch = argsText[i];
+                                if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                if (ch === '(') {
+                                    nest++;
+                                } else if (ch === ')') {
+                                    nest--;
+                                } else if (ch === ',' && nest === 0) {
+                                    arity++;
+                                    hasToken = false;
+                                } else if (ch === ';' && nest === 0) {
+                                    arities.add(hasToken ? arity + 1 : arity);
+                                    hasToken = false;
+                                    arity = 0;
+                                } else if (ch.trim() !== '') {
+                                    hasToken = true;
+                                }
+                            }
+
+                            if (hasToken || arity > 0) {
+                                arities.add(arity + (hasToken ? 1 : 0));
+                            } else if (lastNonWS === ';') {
+                                arities.add(0);
+                            }
+
+                            if(arities.size == 0) {
+                                const predicateKey = `${predicateName}/0`;
                                 if (!this.definedPredicates.has(predicateKey)) {
                                     this.definedPredicates.set(predicateKey, []);
                                 }
                                 this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                            })
+                            } else {
+                                arities.forEach(arity => {
+                                    const predicateKey = `${predicateName}/${arity}`;
+                                    if (!this.definedPredicates.has(predicateKey)) {
+                                        this.definedPredicates.set(predicateKey, []);
+                                    }
+                                    this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                })
+                            }
                         } else {
                             const predicateKey = `${predicateName}/0`
                             if (!this.definedPredicates.has(predicateKey)) {
@@ -392,7 +431,7 @@ class VerboseASPListener extends ASPListener {
                                 let argsText;
                                 if(atomText.indexOf('(') != -1) {
                                     hasArgs = true;
-                                    argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                                    argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                                 }
                                 const terms = atom.term();
 
@@ -406,14 +445,53 @@ class VerboseASPListener extends ASPListener {
                                 }
 
                                 if(hasArgs) {
-                                    const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                                    argsArities.forEach(arity => {
-                                        const predicateKey = `${predicateName}/${arity}`;
+                                    const arities = new Set();
+                                    let nest = 0;
+                                    let arity = 0;
+                                    let hasToken = false;
+                                    let lastNonWS = '';
+
+                                    for (let i = 0; i < argsText.length; i++) {
+                                        const ch = argsText[i];
+                                        if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                        if (ch === '(') {
+                                            nest++;
+                                        } else if (ch === ')') {
+                                            nest--;
+                                        } else if (ch === ',' && nest === 0) {
+                                            arity++;
+                                            hasToken = false;
+                                        } else if (ch === ';' && nest === 0) {
+                                            arities.add(hasToken ? arity + 1 : arity);
+                                            hasToken = false;
+                                            arity = 0;
+                                        } else if (ch.trim() !== '') {
+                                            hasToken = true;
+                                        }
+                                    }
+
+                                    if (hasToken || arity > 0) {
+                                        arities.add(arity + (hasToken ? 1 : 0));
+                                    } else if (lastNonWS === ';') {
+                                        arities.add(0);
+                                    }
+
+                                    if(arities.size == 0) {
+                                        const predicateKey = `${predicateName}/0`;
                                         if (!this.usedPredicates.has(predicateKey)) {
                                             this.usedPredicates.set(predicateKey, []);
                                         }
                                         this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                                    })
+                                    } else {
+                                        arities.forEach(arity => {
+                                            const predicateKey = `${predicateName}/${arity}`;
+                                            if (!this.usedPredicates.has(predicateKey)) {
+                                                this.usedPredicates.set(predicateKey, []);
+                                            }
+                                            this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                        })
+                                    }
                                 } else {
                                     const predicateKey = `${predicateName}/0`
                                     if (!this.usedPredicates.has(predicateKey)) {
@@ -611,7 +689,7 @@ class VerboseASPListener extends ASPListener {
                         let argsText;
                         if(atomText.indexOf('(') != -1) {
                             hasArgs = true;
-                            argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                            argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                         }
                         const terms = atom.term();
 
@@ -625,14 +703,53 @@ class VerboseASPListener extends ASPListener {
                         }
 
                         if(hasArgs) {
-                            const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                            argsArities.forEach(arity => {
-                                const predicateKey = `${predicateName}/${arity}`;
+                            const arities = new Set();
+                            let nest = 0;
+                            let arity = 0;
+                            let hasToken = false;
+                            let lastNonWS = '';
+
+                            for (let i = 0; i < argsText.length; i++) {
+                                const ch = argsText[i];
+                                if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                if (ch === '(') {
+                                    nest++;
+                                } else if (ch === ')') {
+                                    nest--;
+                                } else if (ch === ',' && nest === 0) {
+                                    arity++;
+                                    hasToken = false;
+                                } else if (ch === ';' && nest === 0) {
+                                    arities.add(hasToken ? arity + 1 : arity);
+                                    hasToken = false;
+                                    arity = 0;
+                                } else if (ch.trim() !== '') {
+                                    hasToken = true;
+                                }
+                            }
+
+                            if (hasToken || arity > 0) {
+                                arities.add(arity + (hasToken ? 1 : 0));
+                            } else if (lastNonWS === ';') {
+                                arities.add(0);
+                            }
+
+                            if(arities.size == 0) {
+                                const predicateKey = `${predicateName}/0`;
                                 if (!this.definedPredicates.has(predicateKey)) {
                                     this.definedPredicates.set(predicateKey, []);
                                 }
                                 this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                            })
+                            } else {
+                                arities.forEach(arity => {
+                                    const predicateKey = `${predicateName}/${arity}`;
+                                    if (!this.definedPredicates.has(predicateKey)) {
+                                        this.definedPredicates.set(predicateKey, []);
+                                    }
+                                    this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                })
+                            }
                         } else {
                             const predicateKey = `${predicateName}/0`
                             if (!this.definedPredicates.has(predicateKey)) {
@@ -685,7 +802,7 @@ class VerboseASPListener extends ASPListener {
                             let argsText;
                             if(atomText.indexOf('(') != -1) {
                                 hasArgs = true;
-                                argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                                argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                             }
                             const terms = atom.term();
 
@@ -699,14 +816,53 @@ class VerboseASPListener extends ASPListener {
                             }
 
                             if(hasArgs) {
-                                const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                                argsArities.forEach(arity => {
-                                    const predicateKey = `${predicateName}/${arity}`;
+                                const arities = new Set();
+                                let nest = 0;
+                                let arity = 0;
+                                let hasToken = false;
+                                let lastNonWS = '';
+
+                                for (let i = 0; i < argsText.length; i++) {
+                                    const ch = argsText[i];
+                                    if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                    if (ch === '(') {
+                                        nest++;
+                                    } else if (ch === ')') {
+                                        nest--;
+                                    } else if (ch === ',' && nest === 0) {
+                                        arity++;
+                                        hasToken = false;
+                                    } else if (ch === ';' && nest === 0) {
+                                        arities.add(hasToken ? arity + 1 : arity);
+                                        hasToken = false;
+                                        arity = 0;
+                                    } else if (ch.trim() !== '') {
+                                        hasToken = true;
+                                    }
+                                }
+
+                                if (hasToken || arity > 0) {
+                                    arities.add(arity + (hasToken ? 1 : 0));
+                                } else if (lastNonWS === ';') {
+                                    arities.add(0);
+                                }
+
+                                if(arities.size == 0) {
+                                    const predicateKey = `${predicateName}/0`;
                                     if (!this.usedPredicates.has(predicateKey)) {
                                         this.usedPredicates.set(predicateKey, []);
                                     }
                                     this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                                })
+                                } else {
+                                    arities.forEach(arity => {
+                                        const predicateKey = `${predicateName}/${arity}`;
+                                        if (!this.usedPredicates.has(predicateKey)) {
+                                            this.usedPredicates.set(predicateKey, []);
+                                        }
+                                        this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                    })
+                                }
                             } else {
                                 const predicateKey = `${predicateName}/0`
                                 if (!this.usedPredicates.has(predicateKey)) {
@@ -1369,7 +1525,7 @@ class VerboseASPListener extends ASPListener {
                             let argsText;
                             if(atomText.indexOf('(') != -1) {
                                 hasArgs = true;
-                                argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                                argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                             }
                             const terms = atom.term();
 
@@ -1383,14 +1539,53 @@ class VerboseASPListener extends ASPListener {
                             }
 
                             if(hasArgs) {
-                                const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                                argsArities.forEach(arity => {
-                                    const predicateKey = `${predicateName}/${arity}`;
+                                const arities = new Set();
+                                let nest = 0;
+                                let arity = 0;
+                                let hasToken = false;
+                                let lastNonWS = '';
+
+                                for (let i = 0; i < argsText.length; i++) {
+                                    const ch = argsText[i];
+                                    if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                    if (ch === '(') {
+                                        nest++;
+                                    } else if (ch === ')') {
+                                        nest--;
+                                    } else if (ch === ',' && nest === 0) {
+                                        arity++;
+                                        hasToken = false;
+                                    } else if (ch === ';' && nest === 0) {
+                                        arities.add(hasToken ? arity + 1 : arity);
+                                        hasToken = false;
+                                        arity = 0;
+                                    } else if (ch.trim() !== '') {
+                                        hasToken = true;
+                                    }
+                                }
+
+                                if (hasToken || arity > 0) {
+                                    arities.add(arity + (hasToken ? 1 : 0));
+                                } else if (lastNonWS === ';') {
+                                    arities.add(0);
+                                }
+
+                                if(arities.size == 0) {
+                                    const predicateKey = `${predicateName}/0`;
                                     if (!this.usedPredicates.has(predicateKey)) {
                                         this.usedPredicates.set(predicateKey, []);
                                     }
                                     this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                                })
+                                } else {
+                                    arities.forEach(arity => {
+                                        const predicateKey = `${predicateName}/${arity}`;
+                                        if (!this.usedPredicates.has(predicateKey)) {
+                                            this.usedPredicates.set(predicateKey, []);
+                                        }
+                                        this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                    })
+                                }
                             } else {
                                 const predicateKey = `${predicateName}/0`
                                 if (!this.usedPredicates.has(predicateKey)) {
@@ -1853,7 +2048,7 @@ class VerboseASPListener extends ASPListener {
                     let argsText;
                     if(atomText.indexOf('(') != -1) {
                         hasArgs = true;
-                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                     }
                     const terms = atom.term();
 
@@ -1867,14 +2062,53 @@ class VerboseASPListener extends ASPListener {
                     }
 
                     if(hasArgs) {
-                        const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                        argsArities.forEach(arity => {
-                            const predicateKey = `${predicateName}/${arity}`;
+                        const arities = new Set();
+                        let nest = 0;
+                        let arity = 0;
+                        let hasToken = false;
+                        let lastNonWS = '';
+
+                        for (let i = 0; i < argsText.length; i++) {
+                            const ch = argsText[i];
+                            if (!/\s/.test(ch)) lastNonWS = ch;
+
+                            if (ch === '(') {
+                                nest++;
+                            } else if (ch === ')') {
+                                nest--;
+                            } else if (ch === ',' && nest === 0) {
+                                arity++;
+                                hasToken = false;
+                            } else if (ch === ';' && nest === 0) {
+                                arities.add(hasToken ? arity + 1 : arity);
+                                hasToken = false;
+                                arity = 0;
+                            } else if (ch.trim() !== '') {
+                                hasToken = true;
+                            }
+                        }
+
+                        if (hasToken || arity > 0) {
+                            arities.add(arity + (hasToken ? 1 : 0));
+                        } else if (lastNonWS === ';') {
+                            arities.add(0);
+                        }
+
+                        if(arities.size == 0) {
+                            const predicateKey = `${predicateName}/0`;
                             if (!this.definedPredicates.has(predicateKey)) {
                                 this.definedPredicates.set(predicateKey, []);
                             }
                             this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                        })
+                        } else {
+                            arities.forEach(arity => {
+                                const predicateKey = `${predicateName}/${arity}`;
+                                if (!this.definedPredicates.has(predicateKey)) {
+                                    this.definedPredicates.set(predicateKey, []);
+                                }
+                                this.definedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            })
+                        }
                     } else {
                         const predicateKey = `${predicateName}/0`
                         if (!this.definedPredicates.has(predicateKey)) {
@@ -1908,7 +2142,7 @@ class VerboseASPListener extends ASPListener {
                     let argsText;
                     if(atomText.indexOf('(') != -1) {
                         hasArgs = true;
-                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                     }
                     const terms = atom.term();
 
@@ -1922,14 +2156,53 @@ class VerboseASPListener extends ASPListener {
                     }
 
                     if(hasArgs) {
-                        const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                        argsArities.forEach(arity => {
-                            const predicateKey = `${predicateName}/${arity}`;
+                        const arities = new Set();
+                        let nest = 0;
+                        let arity = 0;
+                        let hasToken = false;
+                        let lastNonWS = '';
+
+                        for (let i = 0; i < argsText.length; i++) {
+                            const ch = argsText[i];
+                            if (!/\s/.test(ch)) lastNonWS = ch;
+
+                            if (ch === '(') {
+                                nest++;
+                            } else if (ch === ')') {
+                                nest--;
+                            } else if (ch === ',' && nest === 0) {
+                                arity++;
+                                hasToken = false;
+                            } else if (ch === ';' && nest === 0) {
+                                arities.add(hasToken ? arity + 1 : arity);
+                                hasToken = false;
+                                arity = 0;
+                            } else if (ch.trim() !== '') {
+                                hasToken = true;
+                            }
+                        }
+
+                        if (hasToken || arity > 0) {
+                            arities.add(arity + (hasToken ? 1 : 0));
+                        } else if (lastNonWS === ';') {
+                            arities.add(0);
+                        }
+
+                        if(arities.size == 0) {
+                            const predicateKey = `${predicateName}/0`;
                             if (!this.usedPredicates.has(predicateKey)) {
                                 this.usedPredicates.set(predicateKey, []);
                             }
                             this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                        })
+                        } else {
+                            arities.forEach(arity => {
+                                const predicateKey = `${predicateName}/${arity}`;
+                                if (!this.usedPredicates.has(predicateKey)) {
+                                    this.usedPredicates.set(predicateKey, []);
+                                }
+                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            })
+                        }
                     } else {
                         const predicateKey = `${predicateName}/0`
                         if (!this.usedPredicates.has(predicateKey)) {
@@ -1960,7 +2233,7 @@ class VerboseASPListener extends ASPListener {
                                 let argsText;
                                 if(atomText.indexOf('(') != -1) {
                                     hasArgs = true;
-                                    argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                                    argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                                 }
 
                                 const lineStart = atom.start.line;
@@ -1973,14 +2246,53 @@ class VerboseASPListener extends ASPListener {
                                 }
 
                                 if(hasArgs) {
-                                    const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                                    argsArities.forEach(arity => {
-                                        const predicateKey = `${predicateName}/${arity}`;
+                                    const arities = new Set();
+                                    let nest = 0;
+                                    let arity = 0;
+                                    let hasToken = false;
+                                    let lastNonWS = '';
+
+                                    for (let i = 0; i < argsText.length; i++) {
+                                        const ch = argsText[i];
+                                        if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                        if (ch === '(') {
+                                            nest++;
+                                        } else if (ch === ')') {
+                                            nest--;
+                                        } else if (ch === ',' && nest === 0) {
+                                            arity++;
+                                            hasToken = false;
+                                        } else if (ch === ';' && nest === 0) {
+                                            arities.add(hasToken ? arity + 1 : arity);
+                                            hasToken = false;
+                                            arity = 0;
+                                        } else if (ch.trim() !== '') {
+                                            hasToken = true;
+                                        }
+                                    }
+
+                                    if (hasToken || arity > 0) {
+                                        arities.add(arity + (hasToken ? 1 : 0));
+                                    } else if (lastNonWS === ';') {
+                                        arities.add(0);
+                                    }
+
+                                    if(arities.size == 0) {
+                                        const predicateKey = `${predicateName}/0`;
                                         if (!this.usedPredicates.has(predicateKey)) {
                                             this.usedPredicates.set(predicateKey, []);
                                         }
                                         this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                                    })
+                                    } else {
+                                        arities.forEach(arity => {
+                                            const predicateKey = `${predicateName}/${arity}`;
+                                            if (!this.usedPredicates.has(predicateKey)) {
+                                                this.usedPredicates.set(predicateKey, []);
+                                            }
+                                            this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                        })
+                                    }
                                 } else {
                                     const predicateKey = `${predicateName}/0`
                                     if (!this.usedPredicates.has(predicateKey)) {
@@ -2001,7 +2313,7 @@ class VerboseASPListener extends ASPListener {
                                     let argsText;
                                     if(atomText.indexOf('(') != -1) {
                                         hasArgs = true;
-                                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                                     }
 
                                     const lineStart = atom.start.line;
@@ -2014,14 +2326,53 @@ class VerboseASPListener extends ASPListener {
                                     }
 
                                     if(hasArgs) {
-                                        const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                                        argsArities.forEach(arity => {
-                                            const predicateKey = `${predicateName}/${arity}`;
+                                        const arities = new Set();
+                                        let nest = 0;
+                                        let arity = 0;
+                                        let hasToken = false;
+                                        let lastNonWS = '';
+
+                                        for (let i = 0; i < argsText.length; i++) {
+                                            const ch = argsText[i];
+                                            if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                            if (ch === '(') {
+                                                nest++;
+                                            } else if (ch === ')') {
+                                                nest--;
+                                            } else if (ch === ',' && nest === 0) {
+                                                arity++;
+                                                hasToken = false;
+                                            } else if (ch === ';' && nest === 0) {
+                                                arities.add(hasToken ? arity + 1 : arity);
+                                                hasToken = false;
+                                                arity = 0;
+                                            } else if (ch.trim() !== '') {
+                                                hasToken = true;
+                                            }
+                                        }
+
+                                        if (hasToken || arity > 0) {
+                                            arities.add(arity + (hasToken ? 1 : 0));
+                                        } else if (lastNonWS === ';') {
+                                            arities.add(0);
+                                        }
+
+                                        if(arities.size == 0) {
+                                            const predicateKey = `${predicateName}/0`;
                                             if (!this.usedPredicates.has(predicateKey)) {
                                                 this.usedPredicates.set(predicateKey, []);
                                             }
                                             this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                                        })
+                                        } else {
+                                            arities.forEach(arity => {
+                                                const predicateKey = `${predicateName}/${arity}`;
+                                                if (!this.usedPredicates.has(predicateKey)) {
+                                                    this.usedPredicates.set(predicateKey, []);
+                                                }
+                                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                            })
+                                        }
                                     } else {
                                         const predicateKey = `${predicateName}/0`
                                         if (!this.usedPredicates.has(predicateKey)) {
@@ -2075,7 +2426,7 @@ class VerboseASPListener extends ASPListener {
                     let argsText;
                     if(atomText.indexOf('(') != -1) {
                         hasArgs = true;
-                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                        argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                     }
                     const terms = atom.term();
 
@@ -2089,14 +2440,53 @@ class VerboseASPListener extends ASPListener {
                     }
 
                     if(hasArgs) {
-                        const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                        argsArities.forEach(arity => {
-                            const predicateKey = `${predicateName}/${arity}`;
+                        const arities = new Set();
+                        let nest = 0;
+                        let arity = 0;
+                        let hasToken = false;
+                        let lastNonWS = '';
+
+                        for (let i = 0; i < argsText.length; i++) {
+                            const ch = argsText[i];
+                            if (!/\s/.test(ch)) lastNonWS = ch;
+
+                            if (ch === '(') {
+                                nest++;
+                            } else if (ch === ')') {
+                                nest--;
+                            } else if (ch === ',' && nest === 0) {
+                                arity++;
+                                hasToken = false;
+                            } else if (ch === ';' && nest === 0) {
+                                arities.add(hasToken ? arity + 1 : arity);
+                                hasToken = false;
+                                arity = 0;
+                            } else if (ch.trim() !== '') {
+                                hasToken = true;
+                            }
+                        }
+
+                        if (hasToken || arity > 0) {
+                            arities.add(arity + (hasToken ? 1 : 0));
+                        } else if (lastNonWS === ';') {
+                            arities.add(0);
+                        }
+
+                        if(arities.size == 0) {
+                            const predicateKey = `${predicateName}/0`;
                             if (!this.usedPredicates.has(predicateKey)) {
                                 this.usedPredicates.set(predicateKey, []);
                             }
                             this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                        })
+                        } else {
+                            arities.forEach(arity => {
+                                const predicateKey = `${predicateName}/${arity}`;
+                                if (!this.usedPredicates.has(predicateKey)) {
+                                    this.usedPredicates.set(predicateKey, []);
+                                }
+                                this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                            })
+                        }
                     } else {
                         const predicateKey = `${predicateName}/0`
                         if (!this.usedPredicates.has(predicateKey)) {
@@ -2146,7 +2536,7 @@ class VerboseASPListener extends ASPListener {
                         let argsText;
                         if(atomText.indexOf('(') != -1) {
                             hasArgs = true;
-                            argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.indexOf(')'))
+                            argsText = atomText.slice(atomText.indexOf('(') + 1, atomText.length - 1)
                         }
                         const terms = atom.term();
 
@@ -2160,14 +2550,53 @@ class VerboseASPListener extends ASPListener {
                         }
 
                         if(hasArgs) {
-                            const argsArities = [...new Set(argsText.split(";").map(group => group.split(",").filter(Boolean).length))]
-                            argsArities.forEach(arity => {
-                                const predicateKey = `${predicateName}/${arity}`;
+                            const arities = new Set();
+                            let nest = 0;
+                            let arity = 0;
+                            let hasToken = false;
+                            let lastNonWS = '';
+
+                            for (let i = 0; i < argsText.length; i++) {
+                                const ch = argsText[i];
+                                if (!/\s/.test(ch)) lastNonWS = ch;
+
+                                if (ch === '(') {
+                                    nest++;
+                                } else if (ch === ')') {
+                                    nest--;
+                                } else if (ch === ',' && nest === 0) {
+                                    arity++;
+                                    hasToken = false;
+                                } else if (ch === ';' && nest === 0) {
+                                    arities.add(hasToken ? arity + 1 : arity);
+                                    hasToken = false;
+                                    arity = 0;
+                                } else if (ch.trim() !== '') {
+                                    hasToken = true;
+                                }
+                            }
+
+                            if (hasToken || arity > 0) {
+                                arities.add(arity + (hasToken ? 1 : 0));
+                            } else if (lastNonWS === ';') {
+                                arities.add(0);
+                            }
+
+                            if(arities.size == 0) {
+                                const predicateKey = `${predicateName}/0`;
                                 if (!this.usedPredicates.has(predicateKey)) {
                                     this.usedPredicates.set(predicateKey, []);
                                 }
                                 this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
-                            })
+                            } else {
+                                arities.forEach(arity => {
+                                    const predicateKey = `${predicateName}/${arity}`;
+                                    if (!this.usedPredicates.has(predicateKey)) {
+                                        this.usedPredicates.set(predicateKey, []);
+                                    }
+                                    this.usedPredicates.get(predicateKey).push({ lineStart, lineEnd, indexStart, indexEnd });
+                                })
+                            }
                         } else {
                             const predicateKey = `${predicateName}/0`
                             if (!this.usedPredicates.has(predicateKey)) {

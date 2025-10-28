@@ -2,7 +2,7 @@
 // jshint ignore: start
 import antlr4 from 'antlr4';
 import ASPListener from './ASPListener.mjs';
-const serializedATN = [4,1,44,746,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
+const serializedATN = [4,1,45,746,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,
 4,2,5,7,5,2,6,7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,
 2,13,7,13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
 20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,2,27,
@@ -280,7 +280,7 @@ export default class ASPParser extends antlr4.Parser {
                              "STRING", "EQ", "EQEQ", "COMPARATOR", "AGGREGATE_FUNCTION", 
                              "CLASSICAL_NEGATION", "ADDITION", "OR", "EXCLUSIVE_OR", 
                              "MULTIPLICATION", "DIVISION", "MODULO", "AND", 
-                             "EXPONENTIATION", "WS" ];
+                             "EXPONENTIATION", "EXTERNAL_FUNCTION", "WS" ];
     static ruleNames = [ "program", "statement", "constant", "fact", "choice_rule", 
                          "choice", "comparatorTerm1", "comparatorTerm2", 
                          "choice_element", "choiceHead_atoms", "choiceBody_atoms", 
@@ -3135,7 +3135,8 @@ ASPParser.DIVISION = 40;
 ASPParser.MODULO = 41;
 ASPParser.AND = 42;
 ASPParser.EXPONENTIATION = 43;
-ASPParser.WS = 44;
+ASPParser.EXTERNAL_FUNCTION = 44;
+ASPParser.WS = 45;
 
 ASPParser.RULE_program = 0;
 ASPParser.RULE_statement = 1;
