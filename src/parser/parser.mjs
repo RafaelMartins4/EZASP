@@ -2746,8 +2746,8 @@ class VerboseASPListener extends ASPListener {
     collectVariablesFromTerm(term) {
         if(!term || term.getText() == '') return {allVars: new Set(), groundableVars: new Set(), skip: false, hasNonVarOrNonInt: false};
 
-
         let allVars = [];
+        let groundableVars = new Set();
 
         const isArithmetic = this.isTermArithmetic(term);
 
@@ -2789,12 +2789,12 @@ class VerboseASPListener extends ASPListener {
                                 unaryTerms.forEach(unaryTerm => {
                                     const result = this.collectVariablesFromUnaryTerm(unaryTerm);
                                     result.allVars.forEach(v => allVars.push(v));
+                                    result.groundableVars.forEach(v => groundableVars.add(v));
 
                                     if(result.hasNonGroundableOperator)
                                         hasNonGroundableOperator = true
-                                    if(!result.isVarOrInt) {
+                                    if(!result.isVarOrInt) 
                                         hasNonVarOrNonInt = true;
-                                    }
                                     if(result.skip)
                                         skip = true;
                                 });
@@ -2816,7 +2816,7 @@ class VerboseASPListener extends ASPListener {
                 if(allVars.length == 1) {
                     return {allVars: new Set(allVars), groundableVars: new Set(allVars), skip: skip, hasNonVarOrNonInt: false, hasNonGroundableOperator: false};
                 } else {
-                    return {allVars: new Set(allVars), groundableVars: new Set(), skip: skip, hasNonVarOrNonInt: false, hasNonGroundableOperator: false};
+                    return {allVars: new Set(allVars), groundableVars: groundableVars, skip: skip, hasNonVarOrNonInt: false, hasNonGroundableOperator: false};
                 }
             }
         } else {

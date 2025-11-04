@@ -335,6 +335,11 @@ async function activate(context) {
 
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 			(async () => {
+				if (!editor) {
+					// No editor open, VS Code just lost focus or all tabs closed
+					console.warn('No active editor');
+					return;
+				}
 				fileName = editor.document.fileName;
 		
 				if (fileName.includes('.lp') || fileName.includes('.cl') || fileName.includes('.clp') ||

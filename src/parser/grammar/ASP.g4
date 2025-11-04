@@ -148,4 +148,5 @@ MODULO: '\\';
 AND: '&';
 EXPONENTIATION: '**';
 EXTERNAL_FUNCTION: '@' [a-zA-Z_][a-zA-Z_0-9]* '(' .*? ')' -> skip;
+SCRIPT: '#script' .*? '#end.' -> skip;
 WS: [ \t\r\n]+ -> skip;
