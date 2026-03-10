@@ -3,7 +3,6 @@ const { loadErrors } = require('./engine/loadErrors.js');
 const { readFileSync, existsSync, writeFileSync } = require('fs');
 const path = require('path');
 const { dirname } = require('path');
-const { Console } = require('console');
 
 let disableFeatures;
 
@@ -374,18 +373,18 @@ function deactivate() { }
 
 class CodeActionProvider {
   // @ts-ignore
-  provideCodeActions(document, range, context, token) {
+  provideCodeActions(document, range, context) {
     const actions = [];
 
     for (const diagnostic of context.diagnostics) {
       if (diagnostic.code === 'ordering-warning') {
         const fix = new vscode.CodeAction(
-          'Fix ordering',
+          'Fix order',
           vscode.CodeActionKind.QuickFix
         );
 
         fix.command = {
-          title: 'Fix ordering',
+          title: 'Fix order',
           command: 'ezasp.fixOrderingErrors',
           arguments: [document]
         };
