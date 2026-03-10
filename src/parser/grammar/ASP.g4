@@ -21,8 +21,8 @@ comparatorTerm2: (COMPARATOR | EQ | EQEQ) term;
 
 choice_element: choiceHead_atoms (':' (choiceBody_atoms (',' choiceBody_atoms)* )? )?;
 
-choiceHead_atoms: literal | (NOT? builtIn_atom);  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
-choiceBody_atoms: literal | (NOT? builtIn_atom);
+choiceHead_atoms: literal | (NOT? NOT? builtIn_atom);  // Used exclusively to separate the atoms before and after the colon. Useful for stratification errors
+choiceBody_atoms: literal | (NOT? NOT? builtIn_atom);
 
 definite_rule:
        head ':-' body DOT;
@@ -35,9 +35,9 @@ head:
 body: 
        (body_atoms ((';' | ',') body_atoms)*)?;
 
-head_atoms: literal | NOT? builtIn_atom;
+head_atoms: literal | NOT? NOT? builtIn_atom;
 
-body_atoms: literal | NOT? builtIn_atom | NOT? aggregate_atom_body | NOT? choice;
+body_atoms: literal | NOT? NOT? builtIn_atom | NOT? NOT? aggregate_atom_body | NOT? NOT? choice;
 
 // Optimization statements
 optimization: 
@@ -62,7 +62,7 @@ block_comment: BLOCK_COMMENT;
 unclosed_comment: UNCLOSED_COMMENT;
 line_comment: LINE_COMMENT;
 
-literal: NOT? classical_atom;
+literal: NOT? NOT? classical_atom;
 classical_atom: CLASSICAL_NEGATION? atom;
 atom: CONSTANT ('(' (term (',' term)*)? (';' (term (',' term)*)? )* ')')?;
 
@@ -88,7 +88,7 @@ aggregate_element_body: (term (',' term)*)? (':' (aggregate_literal (',' aggrega
 
 aggregate_element_optimization: ( ((term '@' term) (',' term)*) | (term (',' term)*) ) (':' (aggregate_literal (',' aggregate_literal)*)?)?;
 
-aggregate_literal: literal | NOT? builtIn_atom;
+aggregate_literal: literal | NOT? NOT? builtIn_atom;
 
 // Terms
 term: ('|' additiveTerm '|') | additiveTerm;

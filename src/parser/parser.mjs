@@ -405,12 +405,12 @@ class VerboseASPListener extends ASPListener {
                         }
 
                     } else if(head_atom.builtIn_atom()) {
-                        const hasNot = head_atom.NOT() !== null;
+                        const isNegated = head_atom.NOT().length == 1;
                         const builtIn_atom = head_atom.builtIn_atom();
 
                         // For some reason, built-in atoms that are in the head of a choice act like built-in atoms in the body of a rule
                         // So they only ground variables if they use "==" or "not ... !="
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                         result.vars.forEach(v => choiceVariables.add(v));
                         result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
                         result.linkedVars.forEach(linkedVar => choiceLinkedVariables.push(linkedVar));
@@ -421,7 +421,7 @@ class VerboseASPListener extends ASPListener {
                         body_atoms.forEach(body_atom => {
                             if(body_atom.literal()) {
                                 const literal = body_atom.literal();
-                                const hasNot = literal.NOT() !== null;
+                                const hasNot = literal.NOT().length > 0;
                                 const atom = literal.classical_atom().atom();
                                 if (!atom || !atom.start || !atom.stop) return;
 
@@ -526,9 +526,9 @@ class VerboseASPListener extends ASPListener {
                                 }
                         
                             } else if(body_atom.builtIn_atom()) {
-                                const hasNot = body_atom.NOT() !== null;
+                                const isNegated = body_atom.NOT().length == 1;
                                 const builtIn_atom = body_atom.builtIn_atom();
-                                const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                                const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                                 result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
                                 result.linkedVars.forEach(linkedVar => choiceLinkedVariables.push(linkedVar));
                             }
@@ -579,10 +579,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(head_atom.builtIn_atom()) {
-                        const hasNot = head_atom.NOT() !== null;
+                        const isNegated = head_atom.NOT().length == 1;
                         const builtIn_atom = head_atom.builtIn_atom();
 
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, true);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, true);
                         result.vars.forEach(v => totalVariables.add(v));
                         result.groundedVars.forEach(v => groundedVariables.add(v));
                         result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
@@ -773,12 +773,12 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(head_atom.builtIn_atom()) {
-                        const hasNot = head_atom.NOT() !== null;
+                        const isNegated = head_atom.NOT().length == 1;
                         const builtIn_atom = head_atom.builtIn_atom();
 
                         // For some reason, built-in atoms that are in the head of a choice act like built-in atoms in the body of a rule
                         // So they only ground variables if they use "==" or "not ... !="
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                         result.vars.forEach(v => choiceVariables.add(v));
                         
                         result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
@@ -793,7 +793,7 @@ class VerboseASPListener extends ASPListener {
                     body_atoms.forEach(body_atom => {
                         if(body_atom.literal()) {
                             const literal = body_atom.literal();
-                            const hasNot = literal.NOT() !== null;
+                            const hasNot = literal.NOT().length > 0;
                             const atom = literal.classical_atom().atom();
                             if (!atom || !atom.start || !atom.stop) return;
                             const predicateName = atom.CONSTANT().getText();
@@ -898,10 +898,10 @@ class VerboseASPListener extends ASPListener {
                                 });
                             }
                         } else if(body_atom.builtIn_atom()) {
-                            const hasNot = body_atom.NOT() !== null;
+                            const isNegated = body_atom.NOT().length == 1;
                             const builtIn_atom = body_atom.builtIn_atom();
                             
-                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                             result.groundedVars.forEach(v => choiceGroundedVariables.add(v));
                             if(!hasMultipleElements) {
                                 result.groundedVars.forEach(v => headGroundedVariables.add(v));
@@ -924,7 +924,7 @@ class VerboseASPListener extends ASPListener {
                 body_atoms.forEach(body_atom => {
                     if(body_atom.literal()) {
                         const literal = body_atom.literal();
-                        const hasNot = literal.NOT() !== null;
+                        const hasNot = literal.NOT().length > 0;
                         const terms = literal.classical_atom().atom().term();
                         if(terms) {
                             terms.forEach(term => {
@@ -948,10 +948,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(body_atom.builtIn_atom()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const isNegated = body_atom.NOT().length == 1;
                         const builtIn_atom = body_atom.builtIn_atom();
 
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                         result.vars.forEach(v => {
                             totalVariables.add(v)
                             // If a variable is used in the body of a rule by an atom that does not ground the variable, then we must check if that variable was grounded in the head
@@ -1012,7 +1012,7 @@ class VerboseASPListener extends ASPListener {
                             }
                         }
                     } else if(body_atom.choice()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const hasNot = body_atom.NOT().length > 0;
                         const choice = body_atom.choice();
 
                         if(choice.term()) {
@@ -1153,10 +1153,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(head_atom.builtIn_atom()) {
-                        const hasNot = head_atom.NOT() !== null;
+                        const isNegated = head_atom.NOT().length == 1;
                         const builtIn_atom = head_atom.builtIn_atom();
 
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, true);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, true);
                         result.vars.forEach(v => totalVariables.add(v));
                         result.groundedVars.forEach(v => groundedVariables.add(v));
                         result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
@@ -1172,7 +1172,7 @@ class VerboseASPListener extends ASPListener {
                 body_atoms.forEach(body_atom => {
                     if(body_atom.literal()) {
                         const literal = body_atom.literal();
-                        const hasNot = literal.NOT() !== null;
+                        const hasNot = literal.NOT().length > 0;
                         const terms = literal.classical_atom().atom().term();
                         if(terms) {
                             terms.forEach(term => {
@@ -1194,10 +1194,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(body_atom.builtIn_atom()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const isNegated = body_atom.NOT().length == 1;
                         const builtIn_atom = body_atom.builtIn_atom();
 
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                         result.vars.forEach(v => totalVariables.add(v));
                         result.groundedVars.forEach(v => groundedVariables.add(v));
                         result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
@@ -1246,7 +1246,7 @@ class VerboseASPListener extends ASPListener {
                             }
                         }
                     } else if(body_atom.choice()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const hasNot = body_atom.NOT().length > 0;
                         const choice = body_atom.choice();
 
                         if(choice.term()) {
@@ -1342,7 +1342,7 @@ class VerboseASPListener extends ASPListener {
                 body_atoms.forEach(body_atom => {
                     if(body_atom.literal()) {
                         const literal = body_atom.literal();
-                        const hasNot = literal.NOT() !== null;
+                        const hasNot = literal.NOT().length > 0;
                         const terms = literal.classical_atom().atom().term();
                         if(terms) {
                             terms.forEach(term => {
@@ -1364,10 +1364,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(body_atom.builtIn_atom()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const isNegated = body_atom.NOT().length == 1;
                         const builtIn_atom = body_atom.builtIn_atom();
 
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                         result.vars.forEach(v => totalVariables.add(v));
                         result.groundedVars.forEach(v => groundedVariables.add(v));
                         result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
@@ -1416,7 +1416,7 @@ class VerboseASPListener extends ASPListener {
                             }
                         }
                     } else if(body_atom.choice()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const hasNot = body_atom.NOT().length > 0;
                         const choice = body_atom.choice();
 
                         if(choice.term()) {
@@ -1516,7 +1516,7 @@ class VerboseASPListener extends ASPListener {
                     aggregate_literals.forEach(aggregateLiteral => {
                         if(aggregateLiteral.literal()) {
                             const literal = aggregateLiteral.literal();
-                            const hasNot = literal.NOT() !== null;
+                            const hasNot = literal.NOT().length > 0;
                             const atom = aggregateLiteral.literal().classical_atom().atom();
                             if (!atom || !atom.start || !atom.stop) return;
                             const predicateName = atom.CONSTANT().getText();
@@ -1617,10 +1617,10 @@ class VerboseASPListener extends ASPListener {
                                 });
                             }
                         } else if(aggregateLiteral.builtIn_atom()) {
-                            const hasNot = aggregateLiteral.NOT() !== null;
+                            const isNegated = aggregateLiteral.NOT().length == 1;
                             const builtIn_atom = aggregateLiteral.builtIn_atom();
 
-                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                             result.vars.forEach(v => aggregateVariables.add(v));
                             result.groundedVars.forEach(v => aggregateGroundedVariables.add(v));
                             result.linkedVars.forEach(linkedVar => aggregateLinkedVariables.push(linkedVar));
@@ -1678,7 +1678,7 @@ class VerboseASPListener extends ASPListener {
                 body_atoms.forEach(body_atom => {
                     if(body_atom.literal()) {
                         const literal = body_atom.literal();
-                        const hasNot = literal.NOT() !== null;
+                        const hasNot = literal.NOT().length > 0;
                         const terms = literal.classical_atom().atom().term();
                         if(terms) {
                             terms.forEach(term => {
@@ -1700,10 +1700,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(body_atom.builtIn_atom()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const isNegated = body_atom.NOT().length == 1;
                         const builtIn_atom = body_atom.builtIn_atom();
 
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                         result.vars.forEach(v => totalVariables.add(v));
                         result.groundedVars.forEach(v => groundedVariables.add(v));
                         result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
@@ -1752,7 +1752,7 @@ class VerboseASPListener extends ASPListener {
                             }
                         }
                     } else if(body_atom.choice()) {
-                        const hasNot = body_atom.NOT() !== null;
+                        const hasNot = body_atom.NOT().length > 0;
                         const choice = body_atom.choice();
 
                         if(choice.term()) {
@@ -1894,7 +1894,7 @@ class VerboseASPListener extends ASPListener {
                     bodyAtoms.forEach(body_atom => {
                         if(body_atom.literal()) {
                             const literal = body_atom.literal();
-                            const hasNot = literal.NOT() !== null;
+                            const hasNot = literal.NOT().length > 0;
                             const terms = literal.classical_atom().atom().term();
                             if(terms) {
                                 terms.forEach(term => {
@@ -1916,10 +1916,10 @@ class VerboseASPListener extends ASPListener {
                                 });
                             }
                         } else if(body_atom.builtIn_atom()) {
-                            const hasNot = body_atom.NOT() !== null;
+                            const isNegated = body_atom.NOT().length == 1;
                             const builtIn_atom = body_atom.builtIn_atom();
 
-                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
                             result.vars.forEach(v => totalVariables.add(v));
                             result.groundedVars.forEach(v => groundedVariables.add(v));
                             result.linkedVars.forEach(linkedVar => linkedVariables.push(linkedVar));
@@ -1968,54 +1968,54 @@ class VerboseASPListener extends ASPListener {
                                 }
                             }
                         } else if(body_atom.choice()) {
-                        const hasNot = body_atom.NOT() !== null;
-                        const choice = body_atom.choice();
+                            const hasNot = body_atom.NOT().length > 0;
+                            const choice = body_atom.choice();
 
-                        if(choice.term()) {
-                            const terms = choice.term();
-                            terms.forEach(term => {
+                            if(choice.term()) {
+                                const terms = choice.term();
+                                terms.forEach(term => {
+                                    this.processTerm(term, this.usedPredicates, false);
+                                    const result = this.collectVariablesFromTerm(term)
+                                    if(result.skip) {
+                                        // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                        // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                        // As a result, we will simply skip these cases and not throw any errors.
+                                    } else {
+                                        result.allVars.forEach(v => totalVariables.add(v));
+                                    }
+                                })
+                            }
+
+                            if(choice.comparatorTerm1()) {
+                                const term = choice.comparatorTerm1().term();
                                 this.processTerm(term, this.usedPredicates, false);
-                                const result = this.collectVariablesFromTerm(term)
-                                if(result.skip) {
+                                const result1 = this.collectVariablesFromTerm(term)
+                                if(result1.skip) {
                                     // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
                                     // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
                                     // As a result, we will simply skip these cases and not throw any errors.
                                 } else {
-                                    result.allVars.forEach(v => totalVariables.add(v));
+                                    if(!hasNot)
+                                        result1.groundableVars.forEach(v => groundedVariables.add(v));
+                                    result1.allVars.forEach(v => totalVariables.add(v));
                                 }
-                            })
-                        }
+                            }
 
-                        if(choice.comparatorTerm1()) {
-                            const term = choice.comparatorTerm1().term();
-                            this.processTerm(term, this.usedPredicates, false);
-                            const result1 = this.collectVariablesFromTerm(term)
-                            if(result1.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors.
-                            } else {
-                                if(!hasNot)
-                                    result1.groundableVars.forEach(v => groundedVariables.add(v));
-                                result1.allVars.forEach(v => totalVariables.add(v));
+                            if(choice.comparatorTerm2()) {
+                                const term = choice.comparatorTerm2().term();
+                                this.processTerm(term, this.usedPredicates, false);
+                                const result2 = this.collectVariablesFromTerm(term)
+                                if(result2.skip) {
+                                    // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
+                                    // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
+                                    // As a result, we will simply skip these cases and not throw any errors.
+                                } else {
+                                    if(!hasNot)
+                                        result2.groundableVars.forEach(v => groundedVariables.add(v));
+                                    result2.allVars.forEach(v => totalVariables.add(v));
+                                }
                             }
                         }
-
-                        if(choice.comparatorTerm2()) {
-                            const term = choice.comparatorTerm2().term();
-                            this.processTerm(term, this.usedPredicates, false);
-                            const result2 = this.collectVariablesFromTerm(term)
-                            if(result2.skip) {
-                                // In clingo, when there is a arithmetic operation between two elements with different types (for example, between a variable and a tuple), a 'undefined operation'
-                                // message is shown. This could be implemented in this parser, however it requires tracking the typing of every element that can be used in arithmetic operations.
-                                // As a result, we will simply skip these cases and not throw any errors.
-                            } else {
-                                if(!hasNot)
-                                    result2.groundableVars.forEach(v => groundedVariables.add(v));
-                                result2.allVars.forEach(v => totalVariables.add(v));
-                            }
-                        }
-                    }
                     })
                 }
             }
@@ -2936,7 +2936,7 @@ class VerboseASPListener extends ASPListener {
         return false;
     }
 
-    collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, isOnHead) {
+    collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, isOnHead) {
         let vars = new Set();
         let groundedVars = new Set();
         let linkedVars = [];
@@ -2959,7 +2959,7 @@ class VerboseASPListener extends ASPListener {
             const hasEquality = builtIn_atom.EQ() !== null || builtIn_atom.EQEQ() !== null;
 
             if(isOnHead) {
-                if((!hasNot && comparator == '!=') || (hasNot && hasEquality)) {
+                if((!isNegated && comparator == '!=') || (isNegated && hasEquality)) {
                     if(result1.groundableVars.size > 0 && result2.allVars.size == 0) {
                         result1.groundableVars.forEach(v => groundedVars.add(v));
                     } else if(result1.allVars.size == 0 && result2.groundableVars.size > 0) {
@@ -2969,7 +2969,7 @@ class VerboseASPListener extends ASPListener {
                     }
                 }
             } else {
-                if((!hasNot && hasEquality) || (hasNot && comparator == '!=')) {
+                if((!isNegated && hasEquality) || (isNegated && comparator == '!=')) {
                     if(result1.groundableVars.size > 0 && result2.allVars.size == 0) {
                         result1.groundableVars.forEach(v => groundedVars.add(v));
                     } else if(result1.allVars.size == 0 && result2.groundableVars.size > 0) {
@@ -3025,10 +3025,10 @@ class VerboseASPListener extends ASPListener {
                             });
                         }
                     } else if(aggregateLiteral.builtIn_atom) {
-                        const hasNot = aggregateLiteral.NOT() !== null;
+                        const isNegated = aggregateLiteral.NOT().length == 1;
                         const builtIn_atom = aggregateLiteral.builtIn_atom();
                         
-                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                        const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
 
                         result.vars.forEach(v => aggregateVariables.add(v));
                         result.groundedVars.forEach(v => aggregateGroundedVariables.add(v));
@@ -3070,7 +3070,7 @@ class VerboseASPListener extends ASPListener {
                     aggregate_literals.forEach(aggregateLiteral => {
                         if(aggregateLiteral.literal()) {
                             const literal = aggregateLiteral.literal();
-                            const hasNot = literal.NOT() !== null;
+                            const hasNot = literal.NOT().length > 0;
                             const terms = literal.classical_atom().atom().term();
                             if(terms) {
                                 terms.forEach(term => {
@@ -3088,10 +3088,10 @@ class VerboseASPListener extends ASPListener {
                                 });
                             }
                         } else if(aggregateLiteral.builtIn_atom) {
-                            const hasNot = aggregateLiteral.NOT() !== null;
+                            const isNegated = aggregateLiteral.NOT().length == 1;
                             const builtIn_atom = aggregateLiteral.builtIn_atom();
                             
-                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, hasNot, false);
+                            const result = this.collectVariablesFromBuiltInAtom(builtIn_atom, isNegated, false);
 
                             result.vars.forEach(v => aggregateVariables.add(v));
                             result.groundedVars.forEach(v => aggregateGroundedVariables.add(v));
