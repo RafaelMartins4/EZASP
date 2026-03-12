@@ -46,7 +46,7 @@ The extension also highlights with a red underline if a predicate has not been d
 
 Whenever a Order warning is present in the program, a 'Fix Order' button will appear under the Quick-fix menu provided by the VSCode editor. Clicking this button will reorganize the constructs in the program to ensure all order warnings are resolved. Additionally, the final order will also minimize the number of stratification issues in each section.
 
-![Screenshot](example_images/automatic_reorder.png.png)
+![Screenshot](example_images/automatic_reorder.png)
 
 ### On-Hover Predicate Information
 
